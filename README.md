@@ -1,7 +1,6 @@
 # Freshet-lang — the Freshet programming language standard
 
-**Current standard: `fsht-01:01`** · Reference implementation:
-[Penstock](https://github.com/OWNER/Penstock) `0.1.0-INDEV`
+**Current standard: `fsht-01:01`**
 
 This repository is the home of the **Freshet language standard**: the
 normative specification developers can read, the feature registry that
