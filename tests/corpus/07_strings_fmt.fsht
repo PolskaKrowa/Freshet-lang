@@ -1,0 +1,26 @@
+// fsht-01:01 corpus — str views (byte-indexed), owned Strings, formatting
+// and concatenation.
+fn main() {
+    let s: str = "hello";
+    print(s); println();                     // hello
+    print_i64(s.len); println();             // 5
+    let w: str = s[1..4];
+    print(w); println();                     // ell
+    print_i64(s[0] as i64); println();        // 104 ('h')
+    let mut out: String = string_new();
+    string_append(&out, "abc");
+    string_append(&out, "def");
+    print(str_of(&out)); println();           // abcdef
+    let n: String = fmt_i64(12345);
+    print(str_of(&n)); println();             // 12345
+    let f: String = fmt_f64(3.14159, 2);
+    print(str_of(&f)); println();             // 3.14
+    let cat: String = str_cat("count: ", "42");
+    print(str_of(&cat)); println();           // count: 42
+    if (str_eq("foo", "foo")) { print("eq"); } else { print("ne"); }
+    println();                                // eq
+    string_free(&out);
+    string_free(&n);
+    string_free(&f);
+    string_free(&cat);
+}

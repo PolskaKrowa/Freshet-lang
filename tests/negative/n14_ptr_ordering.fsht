@@ -1,0 +1,7 @@
+// must be rejected: ordering comparisons on pointers are a type error.
+fn main() {
+    let a: i64 = 1;
+    let b: i64 = 2;
+    if (&a < &b) { print("lt"); }
+    println();
+}

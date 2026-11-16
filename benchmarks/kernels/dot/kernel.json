@@ -1,0 +1,23 @@
+{
+  "contract": {
+    "exit": 0,
+    "stdout": [
+      "TIME <ns>",
+      "CS <decimal>"
+    ]
+  },
+  "cs": "i64",
+  "dims": {
+    "N": 4000000,
+    "R": 25
+  },
+  "hot_cpp": "hot",
+  "hot_freshet": "hot",
+  "hot_rust": "hot",
+  "kernel": "dot",
+  "parallel": "serial",
+  "sizes": "N=4000000, R=25",
+  "spec": "../KERNELS.md",
+  "stresses": "unit-stride f64 multiply-add; loop-carried accumulation",
+  "title": "f64 dot product sweep (unit stride)"
+}

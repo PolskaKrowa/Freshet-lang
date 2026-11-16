@@ -1,0 +1,77 @@
+// statemachine — Freshet benchmark implementation (spec: ../KERNELS.md, fsht-01:01 Kernel 10).
+// Stresses: enum/match dispatch over a 32M-opcode interpreter loop. The
+// opcode stream is generated inside hot() (hence timed, like all setup) but
+// outside the interpreter loop. Freshet converts each tag per step through
+// to_op — the language's idiomatic dispatch shape (no enum arrays here yet).
+// Checksum u64. Expected CS on the reference machine: 3657370813195072677.
+enum Op { Add(u64), Mul(u64), Xor(u64), Rot, Cmp(u64), Jmp(u64), Nop, Sub(u64) }
+
+fn to_op(c: u64, a: u64) -> Op {
+    if (c == 0) { return Add(a); }
+    if (c == 1) { return Mul(a); }
+    if (c == 2) { return Xor(a); }
+    if (c == 3) { return Rot; }
+    if (c == 4) { return Cmp(a); }
+    if (c == 5) { return Jmp(a); }
+    if (c == 6) { return Nop; }
+    return Sub(a);
+}
+
+@noinline fn hot() -> u64 {
+    let n: usize = 32000000;
+    let args: *u64 = malloc(u64, n);
+    let tags: *u64 = malloc(u64, n);
+    defer free(tags);
+    defer free(args);
+    // opcode stream from the continuous PRNG (setup, still inside the
+    // timed hot() call like every implementation)
+    let mut s: u64 = 88172645463325252;
+    for (i in 0..n) {
+        s = s ^ (s >> 12);
+        s = s ^ (s << 25);
+        s = s ^ (s >> 27);
+        let d: u64 = s * 0x2545F4914F6CDD1D;
+        args[i] = d;
+        tags[i] = (d >> 61) & 7;
+    }
+    let mut pc: usize = 0;
+    let mut acc: u64 = 0x9E3779B97F4A7C15;
+    let mut flag: bool = false;
+    let mut steps: u64 = 0;
+    while (pc < n) {
+        let op: Op = to_op(tags[pc], args[pc]);
+        let mut jumped: bool = false;
+        match (op) {
+            Add(a) => { acc = acc + a; }
+            Mul(a) => { acc = acc * (a | 1); }
+            Xor(a) => { acc = acc ^ a; }
+            Rot => {
+                let k: u64 = args[pc] & 63;
+                if (k != 0) { acc = (acc << k) | (acc >> (64 - k)); }
+            }
+            Cmp(a) => { flag = acc < a; }
+            Jmp(a) => {
+                pc = pc + 1 + ((a & 7) as usize);
+                steps = steps + 1;
+                jumped = true;
+            }
+            Nop => { }
+            Sub(a) => { acc = acc - a; }
+        }
+        if (!jumped) {
+            pc = pc + 1;
+            steps = steps + 1;
+        }
+    }
+    let mut f: u64 = 0;
+    if (flag) { f = 1; }
+    return acc ^ (steps * 0x9E3779B97F4A7C15) ^ f;
+}
+
+fn main() {
+    let t0: u64 = freshet.time_ns();
+    let cs: u64 = hot();
+    let t1: u64 = freshet.time_ns();
+    print("TIME "); print_u64(t1 - t0); println();
+    print("CS "); print_u64(cs); println();
+}

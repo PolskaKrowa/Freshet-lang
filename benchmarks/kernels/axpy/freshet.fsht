@@ -1,0 +1,35 @@
+// axpy — Freshet benchmark implementation (spec: ../KERNELS.md, fsht-01:01 Kernel 02).
+// Stresses: read-modify-write streaming (y = y + a*x). Serial.
+// N=4000000, R=25, a=0.5; checksum i64(s * 65536.0) — exact dyadic.
+// Expected CS on the reference machine: 426953618227200.
+@noinline fn hot() -> i64 {
+    let n: usize = 4000000;
+    let reps: i64 = 25;
+    let x: *f64 = malloc(f64, n);
+    let y: *f64 = malloc(f64, n);
+    defer free(y);
+    defer free(x);
+    for (i in 0..n) {
+        x[i] = ((i & 511) as f64) * 0.5;
+        y[i] = ((i & 255) as f64) * 0.25;
+    }
+    let a: f64 = 0.5;
+    for (r in 0..reps) {
+        for (i in 0..n) {
+            y[i] = y[i] + (a * x[i]);
+        }
+    }
+    let mut s: f64 = 0.0;
+    for (i in 0..n) {
+        s = s + y[i];
+    }
+    return (s * 65536.0) as i64;
+}
+
+fn main() {
+    let t0: u64 = freshet.time_ns();
+    let cs: i64 = hot();
+    let t1: u64 = freshet.time_ns();
+    print("TIME "); print_u64(t1 - t0); println();
+    print("CS "); print_i64(cs); println();
+}

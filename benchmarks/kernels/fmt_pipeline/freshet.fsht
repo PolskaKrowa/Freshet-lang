@@ -1,0 +1,31 @@
+// fmt_pipeline — Freshet benchmark implementation (spec: ../KERNELS.md, fsht-01:01 Kernel 11).
+// Stresses: fmt_i64/fmt_f64 formatting + owned String append/free churn,
+// FNV byte fold over each produced string. Serial; N=200000.
+// Expected CS on the reference machine: 15630433521814305753.
+@noinline fn hot() -> u64 {
+    let n: usize = 200000;
+    let mut cs: u64 = 0xcbf29ce484222325;
+    for (i in 0..n) {
+        let mut s: String = fmt_i64(i as i64);
+        string_append(&s, "-");
+        let q: f64 = ((i & 1023) as f64) * 0.25;
+        let t: String = fmt_f64(q, 3);
+        string_append(&s, str_of(&t));
+        string_free(&t);
+        string_append(&s, ";");
+        let v: str = str_of(&s);
+        for (bi in 0..v.len) {
+            cs = (cs ^ (v[bi] as u64)) * 0x100000001b3;
+        }
+        string_free(&s);
+    }
+    return cs;
+}
+
+fn main() {
+    let t0: u64 = freshet.time_ns();
+    let cs: u64 = hot();
+    let t1: u64 = freshet.time_ns();
+    print("TIME "); print_u64(t1 - t0); println();
+    print("CS "); print_u64(cs); println();
+}

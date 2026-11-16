@@ -1,0 +1,23 @@
+{
+  "contract": {
+    "exit": 0,
+    "stdout": [
+      "TIME <ns>",
+      "CS <decimal>"
+    ]
+  },
+  "cs": "i64",
+  "dims": {
+    "N": 4000000,
+    "R": 10
+  },
+  "hot_cpp": "hot",
+  "hot_freshet": "hot",
+  "hot_rust": "hot",
+  "kernel": "soa_sweep",
+  "parallel": "freshet parfor reduction; all others serial",
+  "sizes": "N=4000000, R=10",
+  "spec": "../KERNELS.md",
+  "stresses": "AoS vs SoA layout; cache-line utilisation (the F0408 story)",
+  "title": "8-field struct, 2 hot fields, AoS vs SoA"
+}

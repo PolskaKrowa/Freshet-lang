@@ -1,0 +1,31 @@
+// sumreduce — Freshet benchmark implementation (spec: ../KERNELS.md, fsht-01:01 Kernel 06).
+// Stresses: deterministic parallel f64 reduction via @reproducible parfor.
+// N=32000000, R=4; the init data is exact dyadic so every reduction grouping
+// yields the same bits. Checksum i64(total * 65536.0).
+// Expected CS on the reference machine: 2147483648000000.
+@noinline fn hot() -> i64 {
+    let n: usize = 32000000;
+    let reps: i64 = 4;
+    let d: *f64 = malloc(f64, n);
+    defer free(d);
+    for (i in 0..n) {
+        d[i] = ((i & 1023) as f64) * 0.5 + 0.25;
+    }
+    let mut total: f64 = 0.0;
+    for (r in 0..reps) {
+        let mut acc: f64 = 0.0;
+        @reproducible parfor (i in 0..n) [reduction(+: acc)] {
+            acc = acc + d[i];
+        }
+        total = total + acc;
+    }
+    return (total * 65536.0) as i64;
+}
+
+fn main() {
+    let t0: u64 = freshet.time_ns();
+    let cs: i64 = hot();
+    let t1: u64 = freshet.time_ns();
+    print("TIME "); print_u64(t1 - t0); println();
+    print("CS "); print_i64(cs); println();
+}

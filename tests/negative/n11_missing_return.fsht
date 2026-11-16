@@ -1,0 +1,5 @@
+// must be rejected: a non-void function can fall off the end.
+fn f(a: i64) -> i64 {
+    if (a > 0) { return 1; }
+}
+fn main() { print_i64(f(1)); println(); }

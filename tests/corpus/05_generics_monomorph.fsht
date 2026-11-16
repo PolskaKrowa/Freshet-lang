@@ -1,0 +1,24 @@
+// fsht-01:01 corpus — monomorphised generics: functions, structs, span
+// element inference, Numeric constraint.
+fn clamp<T: Numeric>(x: T, low: T, high: T) -> T {
+    if (x < low) { return low; }
+    if (x > high) { return high; }
+    return x;
+}
+struct Pair<T, U> { a: T, b: U }
+fn first<T, U>(p: Pair<T, U>) -> T { return p.a; }
+fn span_sum<T>(v: Span<T>) -> T {
+    let mut s: T = 0 as T;
+    for (i in 0..v.len) { s = s + v[i]; }
+    return s;
+}
+fn main() {
+    print_f64(clamp(2.5, 1.0, 2.0), 1); println();            // 2.0
+    print_i64(clamp(9 as i64, 1 as i64, 5 as i64)); println(); // 5
+    let p: Pair<f64, i64> = Pair { a: 1.5, b: 7 };
+    print_f64(first(p), 1); print(" "); print_i64(p.b); println(); // 1.5 7
+    let arr: [i64; 4] = [1, 2, 3, 4];
+    print_i64(span_sum(span(arr))); println();               // 10
+    let farr: [f64; 3] = [1.5, 2.5, 3.5];
+    print_f64(span_sum(span(farr)), 1); println();           // 7.5
+}

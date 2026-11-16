@@ -1,0 +1,23 @@
+{
+  "contract": {
+    "exit": 0,
+    "stdout": [
+      "TIME <ns>",
+      "CS <decimal>"
+    ]
+  },
+  "cs": "i64",
+  "dims": {
+    "N": 32000000,
+    "R": 4
+  },
+  "hot_cpp": "hot",
+  "hot_freshet": "hot",
+  "hot_rust": "hot",
+  "kernel": "sumreduce",
+  "parallel": "freshet @reproducible parfor; tuned-cpp std::thread (16 chunks, ascending combine); rust scoped threads; idiomatic-cpp serial",
+  "sizes": "N=32000000, R=4",
+  "spec": "../KERNELS.md",
+  "stresses": "deterministic parallel reduction; exact-dyadic checksum",
+  "title": "parallel f64 reduction"
+}

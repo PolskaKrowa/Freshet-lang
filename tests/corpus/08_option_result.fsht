@@ -1,0 +1,37 @@
+// fsht-01:01 corpus — Option<T> / Result<T, E> prelude enums and the `?`
+// early-return propagation operator.
+fn safe_div(a: i64, b: i64) -> Result<i64, i64> {
+    if (b == 0) { return Err(1001); }
+    return Ok(a / b);
+}
+fn find(arr: Span<i64>, want: i64) -> Option<i64> {
+    for (i in 0..arr.len) {
+        if (arr[i] == want) { return Some(i); }
+    }
+    return None;
+}
+fn work(a: i64, b: i64) -> Result<i64, i64> {
+    let q: i64 = safe_div(a, b)?;
+    return Ok(q * 2);
+}
+fn main() {
+    let r: Result<i64, i64> = work(10, 5);
+    match (r) {
+        Ok(v) => { print_i64(v); }
+        Err(e) => { print_i64(-e); }
+    }
+    println();                                 // 4
+    let r2: Result<i64, i64> = work(10, 0);
+    match (r2) {
+        Ok(v) => { print_i64(v); }
+        Err(e) => { print_i64(e); }
+    }
+    println();                                 // 1001 (propagated by ?)
+    let arr: [i64; 4] = [4, 8, 15, 16];
+    let o: Option<i64> = find(span(arr), 15);
+    match (o) {
+        Some(i) => { print_i64(i); }
+        None => { print("none"); }
+    }
+    println();                                 // 2
+}

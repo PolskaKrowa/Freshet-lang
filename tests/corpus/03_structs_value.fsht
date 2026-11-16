@@ -1,0 +1,16 @@
+// fsht-01:01 corpus — structs are memory values: assignment copies,
+// parameters pass by address (callee sees a copy), C layout rules.
+struct V3 { x: f64, y: f64, z: f64 }
+fn sum2(p: V3) -> f64 { return p.x + p.y + p.z; }
+fn main() {
+    let v: V3 = V3 { x: 1.5, y: 2.5, z: 3.5 };
+    print_f64(sum2(v), 1); println();          // 7.5
+    let mut w: V3 = v;
+    w.x = 10.0;
+    print_f64(v.x, 1); println();              // 1.5  (v unchanged)
+    print_f64(w.x, 1); println();              // 10.0
+    let sz: i64 = sizeof(V3);
+    print_i64(sz); println();                  // 24 (3 x f64, natural align)
+    let al: i64 = alignof(V3);
+    print_i64(al); println();                  // 8
+}

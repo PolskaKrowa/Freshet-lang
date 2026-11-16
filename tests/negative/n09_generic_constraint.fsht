@@ -1,0 +1,5 @@
+// must be rejected: instantiating a Float-constrained generic with i64.
+fn half<T: Float>(x: T) -> T { return x * 0.5; }
+fn main() {
+    print_i64(half(9 as i64)); println();
+}

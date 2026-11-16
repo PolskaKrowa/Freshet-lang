@@ -1,0 +1,47 @@
+// matmul — Freshet benchmark implementation (spec: ../KERNELS.md, fsht-01:01 Kernel 03).
+// Stresses: dense f64 triple loop in the i-k-j (vectorisable) order.
+// Serial; N=256, R=50; checksum i64(s * 65536.0) — exact dyadic.
+// Expected CS on the reference machine: 1623497637888000.
+@noinline fn hot() -> i64 {
+    let n: usize = 256;
+    let reps: i64 = 50;
+    let cells: usize = n * n;
+    let a: *f64 = malloc(f64, cells);
+    let b: *f64 = malloc(f64, cells);
+    let c: *f64 = malloc(f64, cells);
+    defer free(c);
+    defer free(b);
+    defer free(a);
+    for (i in 0..n) {
+        for (j in 0..n) {
+            let row: usize = i * n;
+            a[row + j] = (((i * 7 + j * 13) & 63) as f64) * 0.25;
+            b[row + j] = (((i * 11 + j * 3) & 15) as f64) * 0.5;
+            c[row + j] = 0.0;
+        }
+    }
+    for (r in 0..reps) {
+        for (i in 0..n) {
+            for (k in 0..n) {
+                let aik: f64 = a[i * n + k];
+                let dst: usize = i * n;
+                for (j in 0..n) {
+                    c[dst + j] = c[dst + j] + (aik * b[k * n + j]);
+                }
+            }
+        }
+    }
+    let mut s: f64 = 0.0;
+    for (idx in 0..cells) {
+        s = s + c[idx];
+    }
+    return (s * 65536.0) as i64;
+}
+
+fn main() {
+    let t0: u64 = freshet.time_ns();
+    let cs: i64 = hot();
+    let t1: u64 = freshet.time_ns();
+    print("TIME "); print_u64(t1 - t0); println();
+    print("CS "); print_i64(cs); println();
+}

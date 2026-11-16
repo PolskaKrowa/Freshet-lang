@@ -1,0 +1,48 @@
+// calls — Freshet benchmark implementation (spec: ../KERNELS.md, fsht-01:01 Kernel 12).
+// Stresses: call overhead — three @noinline helper calls per element plus an
+// indirect call through a fn-pointer, with a per-16 branchy selector.
+// Serial; N=10000000; checksum u64 (acc, initialised to 0).
+// Expected CS on the reference machine: 1784478229918707328.
+@noinline fn add64(a: u64, b: u64) -> u64 { return a + b; }
+@noinline fn mul64(a: u64, b: u64) -> u64 { return a * b; }
+@noinline fn xor64(a: u64, b: u64) -> u64 { return a ^ b; }
+
+@noinline fn dispatch(f: fn(u64, u64) -> u64, x: u64) -> u64 {
+    let a: u64 = f(x, 0x9E3779B1);
+    let b: u64 = mul64(a, 0x85EBCA77);
+    return add64(b, 0xC2B2AE3D);
+}
+
+@noinline fn direct3(x: u64) -> u64 {
+    let a: u64 = add64(x, 0xBF58476D1CE4E5B9);
+    let b: u64 = mul64(a, 0x94D049BB133111EF);
+    return xor64(b, 0x2545F4914F6CDD1D);
+}
+
+@noinline fn hot() -> u64 {
+    let n: usize = 10000000;
+    let mut acc: u64 = 0;
+    let mut sel: fn(u64, u64) -> u64 = add64;
+    for (i in 0..n) {
+        let x: u64 = (i as u64) * 0x9E3779B97F4A7C15 + 7;
+        if ((i & 15) == 0) {
+            if (((i >> 4) & 1) == 0) { sel = add64; } else { sel = xor64; }
+        }
+        let mut r: u64 = 0;
+        if ((i & 1) == 0) {
+            r = dispatch(sel, x);
+        } else {
+            r = direct3(x);
+        }
+        acc = acc ^ r;
+    }
+    return acc;
+}
+
+fn main() {
+    let t0: u64 = freshet.time_ns();
+    let cs: u64 = hot();
+    let t1: u64 = freshet.time_ns();
+    print("TIME "); print_u64(t1 - t0); println();
+    print("CS "); print_u64(cs); println();
+}

@@ -1,0 +1,17 @@
+// fsht-01:01 corpus — integer wrapping + truncating division (§ numeric
+// semantics: add/sub/mul wrap in two's complement; signed division
+// truncates toward zero; the remainder takes the dividend's sign).
+fn main() {
+    let mut a: u64 = 18446744073709551615;
+    a = a + 1;
+    print_u64(a); println();                 // 0  (wraps mod 2^64)
+    let mut m: u8 = 200;
+    m = m + 100;
+    print_i64(m as i64); println();           // 44 (300 - 256)
+    let mut n: i32 = 2147483647;
+    n = n + 1;
+    print_i64(n as i64); println();           // -2147483648
+    print_i64(-7 / 2); println();             // -3 (truncate toward zero)
+    print_i64(-7 % 8); println();             // -7 (dividend's sign)
+    print_i64(7 % 8); println();              // 7
+}

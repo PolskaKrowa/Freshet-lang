@@ -1,0 +1,8 @@
+// must be rejected: aggregate (struct) equality is not defined.
+struct P { x: f64 }
+fn main() {
+    let a: P = P { x: 1.0 };
+    let b: P = P { x: 1.0 };
+    if (a == b) { print("eq"); }
+    println();
+}

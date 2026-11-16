@@ -1,0 +1,10 @@
+// must be rejected: writing a captured scalar inside parfor with no
+// reduction clause (data race).
+fn main() {
+    let n: i64 = 100;
+    let mut s: i64 = 0;
+    parfor (i in 0..n) {
+        s = s + 1;
+    }
+    print_i64(s); println();
+}

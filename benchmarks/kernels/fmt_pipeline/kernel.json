@@ -1,0 +1,22 @@
+{
+  "contract": {
+    "exit": 0,
+    "stdout": [
+      "TIME <ns>",
+      "CS <decimal>"
+    ]
+  },
+  "cs": "u64",
+  "dims": {
+    "N": 200000
+  },
+  "hot_cpp": "hot",
+  "hot_freshet": "hot",
+  "hot_rust": "hot",
+  "kernel": "fmt_pipeline",
+  "parallel": "serial",
+  "sizes": "N=200000 iterations",
+  "spec": "../KERNELS.md",
+  "stresses": "fmt_i64/fmt_f64 + owned String append; byte-scan FNV fold",
+  "title": "integer/float formatting + string append churn"
+}

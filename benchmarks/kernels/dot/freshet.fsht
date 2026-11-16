@@ -1,0 +1,31 @@
+// dot — Freshet benchmark implementation (spec: ../KERNELS.md, fsht-01:01 Kernel 01).
+// Stresses: unit-stride f64 multiply-add sweep, loop-carried accumulation.
+// Serial; N=4000000, R=25; checksum i64(total * 65536.0) — exact dyadic.
+// Expected CS on the reference machine: 58105941419622400.
+@noinline fn hot() -> i64 {
+    let n: usize = 4000000;
+    let reps: i64 = 25;
+    let x: *f64 = malloc(f64, n);
+    let y: *f64 = malloc(f64, n);
+    defer free(y);
+    defer free(x);
+    for (i in 0..n) {
+        x[i] = ((i & 1023) as f64) * 0.5;
+        y[i] = ((i & 255) as f64) * 0.25 + 0.125;
+    }
+    let mut total: f64 = 0.0;
+    for (r in 0..reps) {
+        for (i in 0..n) {
+            total = total + (x[i] * y[i]);
+        }
+    }
+    return (total * 65536.0) as i64;
+}
+
+fn main() {
+    let t0: u64 = freshet.time_ns();
+    let cs: i64 = hot();
+    let t1: u64 = freshet.time_ns();
+    print("TIME "); print_u64(t1 - t0); println();
+    print("CS "); print_i64(cs); println();
+}

@@ -1,0 +1,16 @@
+// property: span slicing rules and byte-based str indexing hold at runtime.
+fn main() {
+    let mut ok: i64 = 0;
+    let arr: [i64; 6] = [10, 20, 30, 40, 50, 60];
+    let v: Span<i64> = span(arr);
+    let s: Span<i64> = v[2..5];
+    if (s.len == 3) { ok = ok + 1; }
+    if (s[0] == 30) { ok = ok + 1; }
+    if (s[2] == 50) { ok = ok + 1; }
+    let t: str = "freshet";
+    if (t.len == 7) { ok = ok + 1; }
+    if (t[0] as i64 == 102) { ok = ok + 1; }       // 'f'
+    if (t[6] as i64 == 116) { ok = ok + 1; }       // 't'
+    if (ok == 7) { print("ALL OK"); } else { print("FAILED"); }
+    println();
+}

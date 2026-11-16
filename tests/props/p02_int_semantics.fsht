@@ -1,0 +1,17 @@
+// property: two's-complement wrapping and truncating division hold at
+// runtime. Prints ALL OK when every semantic check passes; the runner also
+// compares the output across -O0 / -O3 / --no-loop-opts builds.
+fn main() {
+    let mut ok: i64 = 0;
+    let mut m: u8 = 200;
+    m = m + 100;
+    if (m == 44) { ok = ok + 1; }
+    let mut n: i32 = 2147483647;
+    n = n + 1;
+    if (n == -2147483648) { ok = ok + 1; }
+    if (-7 / 2 == -3) { ok = ok + 1; }
+    if (-7 % 8 == -7) { ok = ok + 1; }
+    if (7 / 2 == 3) { ok = ok + 1; }
+    if (ok == 5) { print("ALL OK"); } else { print("FAILED"); }
+    println();
+}

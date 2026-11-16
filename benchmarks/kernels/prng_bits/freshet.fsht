@@ -1,0 +1,26 @@
+// prng_bits — Freshet benchmark implementation (spec: ../KERNELS.md, fsht-01:01 Kernel 08).
+// Stresses: integer shift/xor/mul chain (xorshift64*), no memory traffic.
+// Serial; N=128000000 draws; checksum u64 (the folded acc).
+// Expected CS on the reference machine: 12834925503206105187.
+@noinline fn hot() -> u64 {
+    let n: usize = 128000000;
+    let mut s: u64 = 88172645463325252;
+    let mut acc: u64 = 0;
+    let mut cnt: usize = 0;
+    while (cnt < n) {
+        s = s ^ (s >> 12);
+        s = s ^ (s << 25);
+        s = s ^ (s >> 27);
+        acc = acc ^ (s * 0x2545F4914F6CDD1D);
+        cnt = cnt + 1;
+    }
+    return acc;
+}
+
+fn main() {
+    let t0: u64 = freshet.time_ns();
+    let cs: u64 = hot();
+    let t1: u64 = freshet.time_ns();
+    print("TIME "); print_u64(t1 - t0); println();
+    print("CS "); print_u64(cs); println();
+}

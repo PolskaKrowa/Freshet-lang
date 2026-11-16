@@ -1,0 +1,24 @@
+// fsht-01:01 corpus — Span<T> borrowed views: construction, mutation
+// through the view, sub-view slicing without copying.
+fn sum_span(values: Span<f64>) -> f64 {
+    let mut total: f64 = 0.0;
+    for (i in 0..values.len) { total = total + values[i]; }
+    return total;
+}
+fn fill(v: Span<i64>) {
+    for (i in 0..v.len) { v[i] = i as i64 * 10; }
+}
+fn main() {
+    let a: *f64 = malloc(f64, 4);
+    a[0] = 1.0; a[1] = 2.0; a[2] = 3.0; a[3] = 4.0;
+    let s: Span<f64> = span(a, 4);
+    print_f64(sum_span(s), 1); println();        // 10.0
+    let arr: [i64; 5] = [1, 2, 3, 4, 5];
+    let v: Span<i64> = span(arr);
+    fill(v);
+    print_i64(arr[2]); println();               // 20 (view wrote storage)
+    let sub: Span<i64> = v[1..4];
+    print_i64(sub.len); println();              // 3
+    print_i64(sub[0]); println();               // 20
+    free(a);
+}

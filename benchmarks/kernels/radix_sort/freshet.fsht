@@ -1,0 +1,62 @@
+// radix_sort — Freshet benchmark implementation (spec: ../KERNELS.md, fsht-01:01 Kernel 09).
+// Stresses: memory-bound LSB radix sort (4 passes x 8 bits, 256 buckets).
+// Freshet implements the radix directly (the language has no sort builtin —
+// that is the honest comparison point against std::sort / sort_unstable).
+// N=2000000 keys, ROUNDS=4; checksum u64 (FNV-1a over each sorted round).
+// Expected CS on the reference machine: 5412633380069132531.
+@noinline fn hot() -> u64 {
+    let n: usize = 2000000;
+    let rounds: i64 = 4;
+    let keys: *u64 = malloc(u64, n);
+    let tmp: *u64 = malloc(u64, n);
+    let counts: *u64 = malloc(u64, 256);
+    defer free(counts);
+    defer free(tmp);
+    defer free(keys);
+    let mut cs: u64 = 0xcbf29ce484222325;
+    let mut s: u64 = 88172645463325252;
+    for (r in 0..rounds) {
+        // regenerate keys from the continuous PRNG
+        for (i in 0..n) {
+            s = s ^ (s >> 12);
+            s = s ^ (s << 25);
+            s = s ^ (s >> 27);
+            keys[i] = (s * 0x2545F4914F6CDD1D) >> 32;
+        }
+        // four LSB passes of 8 bits
+        for (p in 0..4) {
+            let shift: u64 = (p as u64) * 8;
+            memset(counts, 0, 256 * sizeof(u64));
+            for (i in 0..n) {
+                let c: u64 = (keys[i] >> shift) & 255;
+                counts[c as usize] = counts[c as usize] + 1;
+            }
+            let mut total: u64 = 0;
+            for (c in 0..256) {
+                let cnt: u64 = counts[c];
+                counts[c] = total;
+                total = total + cnt;
+            }
+            for (i in 0..n) {
+                let c: u64 = (keys[i] >> shift) & 255;
+                let pos: u64 = counts[c as usize];
+                tmp[pos as usize] = keys[i];
+                counts[c as usize] = pos + 1;
+            }
+            memcpy(keys, tmp, n * sizeof(u64));
+        }
+        // FNV-1a fold over the sorted round
+        for (i in 0..n) {
+            cs = (cs ^ keys[i]) * 0x100000001b3;
+        }
+    }
+    return cs;
+}
+
+fn main() {
+    let t0: u64 = freshet.time_ns();
+    let cs: u64 = hot();
+    let t1: u64 = freshet.time_ns();
+    print("TIME "); print_u64(t1 - t0); println();
+    print("CS "); print_u64(cs); println();
+}

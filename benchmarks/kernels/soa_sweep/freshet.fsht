@@ -1,0 +1,33 @@
+// soa_sweep — Freshet benchmark implementation (spec: ../KERNELS.md, fsht-01:01 Kernel 07).
+// Stresses: AoS vs SoA layout on an 8-field struct with 2 hot fields — the
+// F0408 story. Freshet uses soa(P8) planes and a parfor reduction inside a
+// serial reps loop (the README hello-world shape).
+// N=4000000, R=10; checksum i64(sum * 65536.0) — exact dyadic.
+// Expected CS on the reference machine: 10485760000000.
+struct P8 { x: f64, y: f64, z: f64, w: f64, vx: f64, vy: f64, vz: f64, vw: f64 }
+
+@noinline fn hot() -> i64 {
+    let n: usize = 4000000;
+    let reps: i64 = 10;
+    let p: soa(P8) = soa_new(P8, n);
+    defer soa_free(p);
+    parfor (i in 0..n) {
+        p[i].x = 1.5;
+        p[i].vy = 2.5;
+    }
+    let mut sum: f64 = 0.0;
+    for (r in 0..reps) {
+        parfor (i in 0..n) [reduction(+: sum)] {
+            sum = sum + (p[i].x + p[i].vy);
+        }
+    }
+    return (sum * 65536.0) as i64;
+}
+
+fn main() {
+    let t0: u64 = freshet.time_ns();
+    let cs: i64 = hot();
+    let t1: u64 = freshet.time_ns();
+    print("TIME "); print_u64(t1 - t0); println();
+    print("CS "); print_i64(cs); println();
+}

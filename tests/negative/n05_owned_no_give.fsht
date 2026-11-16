@@ -1,0 +1,6 @@
+// must be rejected: an owned parameter requires give(...) at the call.
+fn consume(owned data: *u8) { free(data); }
+fn main() {
+    let b: *u8 = malloc(u8, 16);
+    consume(b);
+}

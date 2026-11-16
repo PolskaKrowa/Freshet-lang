@@ -1,0 +1,59 @@
+# Conformance — runs the Freshet-lang stress suite against a build of the
+# reference compiler (Penstock). Point PENSTOCK_REPO at the Penstock
+# checkout to use (default: the same owner's Penstock repository).
+#
+# The hosted-runner build downloads the pinned LLVM SDK on first use
+# (Penstock's CMake handles this) and can take a while; the job is
+# therefore manual/dispatch plus weekly, and every push to the spec.
+name: conformance
+on:
+  workflow_dispatch:
+    inputs:
+      penstock_repo:
+        description: 'Penstock repository (owner/repo)'
+        default: 'OWNER/Penstock'
+        required: true
+  schedule:
+    - cron: '0 4 * * 1'   # weekly, Monday 04:00 UTC
+  push:
+    branches: [main]
+    paths: ['spec/**', 'tests/**']
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      PENSTOCK_REPO: ${{ github.event.inputs.penstock_repo || 'OWNER/Penstock' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Clone and build Penstock
+        run: |
+          set -e
+          git clone --depth 1 "https://github.com/${PENSTOCK_REPO}.git" ../Penstock
+          cd ../Penstock
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j"$(nproc)"
+          test -x build/bin/penstock || test -x bin/penstock
+      - name: Run the Freshet-lang suite
+        run: |
+          set -e
+          PEN=$(cd ../Penstock && ls build/bin/penstock 2>/dev/null || echo bin/penstock)
+          FSHC="$(cd ../Penstock && pwd)/$PEN" \
+            FUZZ_SEEDS="${FUZZ_SEEDS:-64}" \
+            tests/run_suite.sh
+      - name: Benchmark smoke (freshet-only columns; checksum gate on)
+        run: |
+          python3 benchmarks/bench.py \
+            --penstock "$(cd ../Penstock && pwd)/$(cd ../Penstock && ls build/bin/penstock 2>/dev/null || echo bin/penstock)" \
+            --reps 3 --kernels dot,axpy,matmul,stencil,sumreduce,prng_bits,statemachine,calls
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conformance-logs
+          path: |
+            /tmp/freshet-lang-bench/
+          if-no-files-found: ignore

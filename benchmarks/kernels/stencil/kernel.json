@@ -1,0 +1,23 @@
+{
+  "contract": {
+    "exit": 0,
+    "stdout": [
+      "TIME <ns>",
+      "CS <decimal>"
+    ]
+  },
+  "cs": "i64",
+  "dims": {
+    "G": 1024,
+    "T": 60
+  },
+  "hot_cpp": "hot",
+  "hot_freshet": "hot",
+  "hot_rust": "hot",
+  "kernel": "stencil",
+  "parallel": "serial",
+  "sizes": "G=1024 (GxG), T=60",
+  "spec": "../KERNELS.md",
+  "stresses": "neighbour gather pattern; non-dyadic rounding (0.2 factor)",
+  "title": "2-D 5-point Jacobi, double buffered"
+}

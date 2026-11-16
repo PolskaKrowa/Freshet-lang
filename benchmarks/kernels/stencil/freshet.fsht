@@ -1,0 +1,47 @@
+// stencil — Freshet benchmark implementation (spec: ../KERNELS.md, fsht-01:01 Kernel 04).
+// Stresses: 2-D 5-point Jacobi, double buffered, non-dyadic rounding (0.2).
+// Serial; G=1024, T=60; checksum i64((s1 + s2) * 65536.0).
+// Expected CS on the reference machine: 1082331758591.
+@noinline fn hot() -> i64 {
+    let g: usize = 1024;
+    let iters: i64 = 60;
+    let cells: usize = g * g;
+    let mut a: *f64 = malloc(f64, cells);
+    let mut b: *f64 = malloc(f64, cells);
+    defer free(b);
+    defer free(a);
+    for (idx in 0..cells) {
+        let v: f64 = ((idx & 63) as f64) * 0.25;
+        a[idx] = v;
+        b[idx] = v;
+    }
+    for (t in 0..iters) {
+        for (i in 1..g - 1) {
+            for (j in 1..g - 1) {
+                let idx: usize = i * g + j;
+                b[idx] = 0.2 * a[idx - g] + 0.2 * a[idx + g] + 0.2 * a[idx - 1]
+                        + 0.2 * a[idx + 1] + 0.2 * a[idx];
+            }
+        }
+        let tmp: *f64 = a;
+        a = b;
+        b = tmp;
+    }
+    let mut s1: f64 = 0.0;
+    for (idx in 0..cells) {
+        s1 = s1 + a[idx];
+    }
+    let mut s2: f64 = 0.0;
+    for (idx in 0..cells) {
+        s2 = s2 + b[idx];
+    }
+    return ((s1 + s2) * 65536.0) as i64;
+}
+
+fn main() {
+    let t0: u64 = freshet.time_ns();
+    let cs: i64 = hot();
+    let t1: u64 = freshet.time_ns();
+    print("TIME "); print_u64(t1 - t0); println();
+    print("CS "); print_i64(cs); println();
+}

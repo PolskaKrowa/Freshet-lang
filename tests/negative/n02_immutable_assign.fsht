@@ -1,0 +1,6 @@
+// must be rejected: assignment through an immutable binding.
+fn main() {
+    let x: i64 = 1;
+    x = 2;
+    print_i64(x); println();
+}

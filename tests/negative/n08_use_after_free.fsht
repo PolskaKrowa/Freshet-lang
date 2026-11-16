@@ -1,0 +1,7 @@
+// must be rejected: reading through a freed allocation.
+fn main() {
+    let a: *i64 = malloc(i64, 10);
+    a[0] = 1;
+    free(a);
+    print_i64(a[0]); println();
+}

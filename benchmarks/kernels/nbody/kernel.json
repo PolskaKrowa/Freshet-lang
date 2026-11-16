@@ -1,0 +1,23 @@
+{
+  "contract": {
+    "exit": 0,
+    "stdout": [
+      "TIME <ns>",
+      "CS <decimal>"
+    ]
+  },
+  "cs": "i64",
+  "dims": {
+    "B": 2048,
+    "S": 10
+  },
+  "hot_cpp": "hot",
+  "hot_freshet": "hot",
+  "hot_rust": "hot",
+  "kernel": "nbody",
+  "parallel": "serial",
+  "sizes": "B=2048 bodies, S=10 steps",
+  "spec": "../KERNELS.md",
+  "stresses": "sqrt/div heavy pairwise physics; struct layout (soa vs aos)",
+  "title": "O(n^2) N-body gravitational sweep (serial)"
+}

@@ -1,0 +1,10 @@
+// must be rejected: match arms do not cover every variant and no _ arm.
+enum Color { Red, Green, Blue }
+fn main() {
+    let c: Color = Red;
+    match (c) {
+        Red => { print("red"); }
+        Green => { print("green"); }
+    }
+    println();
+}

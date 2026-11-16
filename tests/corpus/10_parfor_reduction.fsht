@@ -1,0 +1,15 @@
+// fsht-01:01 corpus — parfor with a deterministic reduction over exact
+// dyadic data (grouping-independent result).
+fn main() {
+    let n: usize = 10000;
+    let d: *f64 = malloc(f64, n);
+    parfor (i in 0..n) {
+        d[i] = 0.5;
+    }
+    let mut acc: f64 = 0.0;
+    @reproducible parfor (i in 0..n) [reduction(+: acc)] {
+        acc = acc + d[i];
+    }
+    print_f64(acc, 1); println();               // 5000.0
+    free(d);
+}

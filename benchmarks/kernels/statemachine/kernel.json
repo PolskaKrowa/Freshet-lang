@@ -1,0 +1,22 @@
+{
+  "contract": {
+    "exit": 0,
+    "stdout": [
+      "TIME <ns>",
+      "CS <decimal>"
+    ]
+  },
+  "cs": "u64",
+  "dims": {
+    "N": 32000000
+  },
+  "hot_cpp": "hot",
+  "hot_freshet": "hot",
+  "hot_rust": "hot",
+  "kernel": "statemachine",
+  "parallel": "serial",
+  "sizes": "N=32000000 ops",
+  "spec": "../KERNELS.md",
+  "stresses": "tagged-union dispatch (match/switch); branch pipeline",
+  "title": "enum/match dispatch interpreter"
+}

@@ -1,0 +1,16 @@
+# suite artifacts
+tests/fuzz/fuzz-artifacts/
+fuzz-artifacts/
+
+# benchmark outputs
+results.json
+results.md
+reports/
+
+# editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+__pycache__/
+*.pyc

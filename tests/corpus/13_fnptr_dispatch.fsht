@@ -1,0 +1,16 @@
+// fsht-01:01 corpus — first-class function pointers: slots, reassignment,
+// indirect calls and fn-pointer parameters.
+fn add(a: i64, b: i64) -> i64 { return a + b; }
+fn mul(a: i64, b: i64) -> i64 { return a * b; }
+fn apply_twice(f: fn(i64, i64) -> i64, x: i64) -> i64 {
+    return f(f(x, x), x);
+}
+fn main() {
+    let g: fn(i64, i64) -> i64 = add;
+    print_i64(g(2, 3)); println();               // 5
+    let mut h: fn(i64, i64) -> i64 = add;
+    h = mul;
+    print_i64(h(4, 5)); println();               // 20
+    print_i64(apply_twice(add, 3)); println();    // 9
+    print_i64(apply_twice(mul, 3)); println();   // 27
+}

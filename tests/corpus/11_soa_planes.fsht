@@ -1,0 +1,19 @@
+// fsht-01:01 corpus — soa(S) plane storage: unit-stride field access
+// through the descriptor handle.
+struct P3 { x: f64, y: f64, z: f64 }
+fn main() {
+    let n: usize = 8;
+    let s: soa(P3) = soa_new(P3, n);
+    defer soa_free(s);
+    parfor (i in 0..n) {
+        s[i].x = (i as f64) * 0.5;
+        s[i].y = 1.0;
+        s[i].z = 2.0;
+    }
+    let mut sx: f64 = 0.0;
+    for (i in 0..n) { sx = sx + s[i].x; }
+    print_f64(sx, 2); println();               // 14.00
+    let mut sy: f64 = 0.0;
+    for (i in 0..n) { sy = sy + s[i].y; }
+    print_f64(sy, 2); println();               // 8.00
+}

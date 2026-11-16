@@ -1,0 +1,53 @@
+# Suite self-check — no Freshet compiler required.
+#
+# Validates that the repository's own machinery is internally consistent:
+#   * every corpus/negative/props file referenced by the runners exists
+#     with its .expected twin
+#   * every kernel directory has all four implementations + kernel.json
+#   * the python tools byte-compile and the shell runner parses
+#   * the fuzz generator produces a deterministic program for a seed
+name: suite-selfcheck
+on:
+  push:
+    paths: ['tests/**', 'benchmarks/**', '.github/workflows/suite-selfcheck.yml']
+  pull_request:
+    paths: ['tests/**', 'benchmarks/**', '.github/workflows/suite-selfcheck.yml']
+
+jobs:
+  selfcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: File completeness
+        run: |
+          set -e
+          missing=0
+          for f in tests/corpus/*.fsht; do
+            [ -f "${f%.fsht}.expected" ] || { echo "missing twin: $f"; missing=1; }
+          done
+          for f in tests/negative/*.fsht; do
+            [ -f "${f%.fsht}.expected" ] || { echo "missing twin: $f"; missing=1; }
+          done
+          for k in benchmarks/kernels/*/; do
+            for impl in freshet.fsht idiomatic.cpp tuned.cpp safe.rs kernel.json; do
+              [ -f "$k$impl" ] || { echo "missing $k$impl"; missing=1; }
+            done
+          done
+          [ "$missing" = 0 ] || exit 1
+          echo "file completeness OK"
+      - name: Python and shell syntax
+        run: |
+          python3 -m py_compile benchmarks/bench.py benchmarks/annotate.py \
+            tests/fuzz/gen.py tests/fuzz/run_fuzz.py
+          bash -n tests/run_suite.sh
+      - name: Generator determinism
+        run: |
+          a=$(python3 tests/fuzz/gen.py --seed 4242)
+          b=$(python3 tests/fuzz/gen.py --seed 4242)
+          [ "$a" = "$b" ] && echo "generator deterministic OK"
+      - name: Bench driver discovery only (no toolchains needed)
+        run: |
+          python3 benchmarks/bench.py --list

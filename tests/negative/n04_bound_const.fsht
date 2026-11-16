@@ -1,0 +1,5 @@
+// must be rejected: constant index outside the array bounds.
+fn main() {
+    let a: [i64; 4] = [1, 2, 3, 4];
+    print_i64(a[7]); println();
+}

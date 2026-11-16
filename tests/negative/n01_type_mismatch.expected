@@ -1,0 +1,2 @@
+reject F0201
+# no implicit float->int conversion

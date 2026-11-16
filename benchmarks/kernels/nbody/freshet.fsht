@@ -1,0 +1,76 @@
+// nbody — Freshet benchmark implementation (spec: ../KERNELS.md, fsht-01:01 Kernel 05).
+// Stresses: sqrt/div-heavy pairwise physics; soa(Body) layout (the layout
+// story is the comparison point — the checksum is layout-independent).
+// Serial in every implementation; B=2048, S=10, dt=0.00001, eps2=0.0625.
+// Checksum i64(s * 65536.0). Expected CS on the reference machine: 2416110668.
+struct Body { x: f64, y: f64, z: f64, vx: f64, vy: f64, vz: f64, m: f64 }
+
+@noinline fn hot() -> i64 {
+    let b: usize = 2048;
+    let steps: i64 = 10;
+    let dt: f64 = 0.00001;
+    let eps2: f64 = 0.0625;
+    let bodies: soa(Body) = soa_new(Body, b);
+    defer soa_free(bodies);
+    let axv: *f64 = malloc(f64, b);
+    let ayv: *f64 = malloc(f64, b);
+    let azv: *f64 = malloc(f64, b);
+    defer free(azv);
+    defer free(ayv);
+    defer free(axv);
+    for (i in 0..b) {
+        bodies[i].x = ((i & 63) as f64) * 0.25;
+        bodies[i].y = ((i & 31) as f64) * 0.5;
+        bodies[i].z = ((i & 15) as f64) * 0.125;
+        bodies[i].vx = 0.0;
+        bodies[i].vy = 0.0;
+        bodies[i].vz = 0.0;
+        bodies[i].m = 1.0 + ((i & 7) as f64) * 0.125;
+    }
+    for (s in 0..steps) {
+        // phase 1 (forces); self-interaction j == i included (r2 >= eps2)
+        for (i in 0..b) {
+            let mut ax: f64 = 0.0;
+            let mut ay: f64 = 0.0;
+            let mut az: f64 = 0.0;
+            for (j in 0..b) {
+                let dx: f64 = bodies[j].x - bodies[i].x;
+                let dy: f64 = bodies[j].y - bodies[i].y;
+                let dz: f64 = bodies[j].z - bodies[i].z;
+                let r2: f64 = dx * dx + dy * dy + dz * dz + eps2;
+                let inv: f64 = 1.0 / sqrt(r2);
+                let inv3: f64 = inv * inv * inv;
+                let mm: f64 = bodies[j].m * inv3;
+                ax = ax + dx * mm;
+                ay = ay + dy * mm;
+                az = az + dz * mm;
+            }
+            axv[i] = ax;
+            ayv[i] = ay;
+            azv[i] = az;
+        }
+        // phase 2 (integrate)
+        for (i in 0..b) {
+            bodies[i].vx = bodies[i].vx + axv[i] * dt;
+            bodies[i].vy = bodies[i].vy + ayv[i] * dt;
+            bodies[i].vz = bodies[i].vz + azv[i] * dt;
+            bodies[i].x = bodies[i].x + bodies[i].vx * dt;
+            bodies[i].y = bodies[i].y + bodies[i].vy * dt;
+            bodies[i].z = bodies[i].z + bodies[i].vz * dt;
+        }
+    }
+    let mut s: f64 = 0.0;
+    for (i in 0..b) {
+        s = s + (bodies[i].x + bodies[i].y + bodies[i].z + bodies[i].vx
+                + bodies[i].vy + bodies[i].vz + bodies[i].m);
+    }
+    return (s * 65536.0) as i64;
+}
+
+fn main() {
+    let t0: u64 = freshet.time_ns();
+    let cs: i64 = hot();
+    let t1: u64 = freshet.time_ns();
+    print("TIME "); print_u64(t1 - t0); println();
+    print("CS "); print_i64(cs); println();
+}
