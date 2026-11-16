@@ -105,4 +105,4 @@ all require a History reference. Purely editorial work does not.
   fsht-xx:yy+1 (minor guarantees), except where a History reference
   documents a deprecation already announced one major version ahead.
 * Conformance statements should name the exact `fsht-xx:yy` they target;
-  the [test suite](tests/) is the arbiter.
+  the [test suite](tests/) is the arbiter. 
