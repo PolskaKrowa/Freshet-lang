@@ -28,6 +28,18 @@ Compilers (Penstock is the reference)
 The language stays independent of the scientific libraries; the
 scientific libraries evolve without compiler changes (spec ch. 00).
 
+> **fsht-02:01 work has started** (2026-11-16): the first cut of
+> [fsht-02:01-02.09.01](registry/features/02-data-types.md) (dynamic
+> collections — `Vec<T>`) and
+> [fsht-02:01-02.09.02](registry/features/02-data-types.md) (container
+> move semantics: drop on scope exit, move-out invalidation) is
+> implemented in the reference compiler and tracked as `in development`
+> in the registry, with the draft spec chapter
+> [spec/20-dynamic-collections.md](spec/20-dynamic-collections.md) and
+> conformance tests (`tests/corpus/13`, `tests/negative/n18–n22`).
+> Traits (fsht-02:02) and const generics (fsht-02:03) remain accepted
+> targets.
+
 ## Repository map
 
 | directory | contents |

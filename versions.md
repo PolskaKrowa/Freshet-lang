@@ -52,8 +52,12 @@ Rules:
    `aa.bb`.
 3. Status of a feature: `normative` (in the spec chapters),
    `accepted` (ratified design with a target version, not yet
-   implemented), `proposed` (open design, RFC stage),
-   `deprecated` (scheduled for removal in a stated version).
+   implemented), `in development` (accepted feature whose first cut is
+   implemented in the reference compiler but not yet ratified — the
+   registry entry carries the cut's surface, deferrals and a draft
+   spec chapter, all marked non-normative), `proposed` (open design,
+   RFC stage), `deprecated` (scheduled for removal in a stated
+   version).
 4. fsht-01:01 roadmap items (dynamic containers, user traits, const
    generics, the expanded library, the portable runtime) exist ONLY as
    registry entries with target versions — the spec chapters stay a
@@ -105,4 +109,4 @@ all require a History reference. Purely editorial work does not.
   fsht-xx:yy+1 (minor guarantees), except where a History reference
   documents a deprecation already announced one major version ahead.
 * Conformance statements should name the exact `fsht-xx:yy` they target;
-  the [test suite](tests/) is the arbiter. 
+  the [test suite](tests/) is the arbiter.

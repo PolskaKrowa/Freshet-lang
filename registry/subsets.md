@@ -37,7 +37,7 @@ for identifier allocation.
 | 02 | 06 | strings (`str`, `String`) |
 | 02 | 07 | Option / Result |
 | 02 | 08 | enums and tagged unions |
-| 02 | 09 | (reserved) dynamic containers: Vec, Slice, SliceMut, ByteBuffer |
+| 02 | 09 | dynamic containers: Vec<T> (in development, fsht-02:01; Slice/SliceMut naming open — views via Span<T>; ByteBuffer = Vec<u8>; String migration deferred) |
 | 03 | 01 | allocation primitives |
 | 03 | 02 | ownership & borrowing |
 | 03 | 03 | data stacks |

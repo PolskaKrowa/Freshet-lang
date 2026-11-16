@@ -73,12 +73,18 @@ update references) live in the per-subset files.
 | fsht-01:01-10.04.01 | tooling | [10](features/10-toolchain.md) |
 | fsht-01:01-10.04.02 | observability | [10](features/10-toolchain.md) |
 
+## In development (first cut in the reference compiler) — fsht-02:01
+
+| identifier | title | target |
+|---|---|---|
+| fsht-02:01-02.09.01 | dynamic collections (`Vec<T>` first cut; Slice/SliceMut naming open; ByteBuffer = `Vec<u8>`) | fsht-02:01 |
+| fsht-02:01-02.09.02 | container move semantics (drop on scope exit, move-out invalidation, manual release) | fsht-02:01 |
+
 ## Accepted (target versions) — the fsht-02/03 roadmap
 
 | identifier | title | target |
 |---|---|---|
-| fsht-02:01-02.09.01 | dynamic collections (Vec/Slice/SliceMut/ByteBuffer/String) | fsht-02:01 |
-| fsht-02:01-02.09.02 | container move semantics | fsht-02:01 |
+| fsht-02:02-06.02.01 | user-defined traits (static dispatch) | fsht-02:02 |
 | fsht-02:02-06.02.01 | user-defined traits (static dispatch) | fsht-02:02 |
 | fsht-02:03-06.03.01 | const generics + const fn | fsht-02:03 |
 | fsht-03:01-05.04.01 | numeric text parsing | fsht-03:01 |

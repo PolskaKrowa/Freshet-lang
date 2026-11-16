@@ -161,7 +161,12 @@ History:
 
 ### fsht-02:01-02.09.01 — dynamic collections
 
-Status: accepted (target fsht-02:01). Spec: — (not yet normative)
+Status: accepted → in development (target fsht-02:01). Spec: draft —
+[spec/20-dynamic-collections.md](../../spec/20-dynamic-collections.md)
+(not yet normative). Reference implementation: Penstock 0.1.0-INDEV
+(conformance: `tests/pos_vec_*.fsht` / `tests/neg_vec_*.fsht` in the
+compiler tree; corpus `tests/corpus/13_vec_containers.fsht` and
+negative `tests/negative/n18..n22` here).
 
 `Vec<T>` (dynamically growing array), `Slice<T>` / `SliceMut<T>`
 (borrowed views), `ByteBuffer` (dynamic byte storage), and a properly
@@ -176,16 +181,95 @@ proper ownership/move/destruction model for container types is the
 prerequisite for a reliable standard library. This is the single
 largest immediate omission in fsht-01:01.
 
+**First cut (in development, Penstock).** `Vec<T>` is a prelude
+generic struct `{ data: *T, len: u64, cap: u64 }` monomorphised per
+element type through the ordinary generic machinery; the surface
+follows the String free-function style:
+
+- construction — `vec_new(T, cap?)`, `vec_from_span`,
+  `vec_from_array`, `vec_clone` (owned deep copy);
+- mutation (`&mut v`, the binding must be `let mut`) — `vec_push`,
+  `vec_pop -> Option<T>`, `vec_insert`, `vec_remove -> Option<T>`,
+  `vec_reserve`, `vec_truncate`, `vec_resize`, `vec_clear`,
+  `vec_free` (manual release);
+- reads — checked indexing `v[i]` (lvalue; bounds-checked against the
+  runtime `len`), `vec_get(v, i) -> Option<T>`, `vec_len` /
+  `vec_capacity` / `vec_is_empty` (the `v.len` / `v.cap` fields remain
+  direct struct reads);
+- borrowed views without copying — `v[lo..hi]` and
+  `vec_slice(v, lo, hi)` yield `Span<T>`; a `Vec<u8>` is the
+  ByteBuffer shape.
+
+Elements are restricted to non-owning types (scalars, `str`, POD
+structs, enums, arrays, spans); owning elements (`Vec<String>`,
+`Vec<Vec<T>>`) are rejected with a diagnostic until drop elaboration
+through nested shapes lands (tracked with 02.09.02). Container
+mutation inside `parfor` bodies is rejected (race on the header /
+allocator contention); the supported parallel shape is a `Span<T>`
+view taken before the loop. Custom allocators and bulk-copy APIs are
+NOT in the first cut.
+
+**Open design question for fsht-02:01 ratification:** distinct
+`Slice<T>` / `SliceMut<T>` types versus absorbing borrowed views into
+the existing `Span<T>` (the first cut delivers views through
+`Span<T>`; `Slice`/`SliceMut` may be resolved as aliases or dropped
+at ratification). The `String` migration onto the container model is
+deferred to fsht-03:02 (see below).
+
 History:
 - fsht-02:01 (accepted) — first accepted for fsht-02:01 with the
   ownership-integration requirement stated above.
+- fsht-02:01 (in development) — first cut implemented in Penstock
+  0.1.0-INDEV: `Vec<T>` with the surface above, ownership/move/drop
+  integration per 02.09.02, monomorphised per element type; positive
+  and negative conformance tests added to both this repository and
+  the compiler tree. Spec text exists as the draft chapter
+  spec/20-dynamic-collections.md and stays non-normative until
+  fsht-02:01 ratifies. Deferrals carried forward: custom allocators,
+  bulk copying, `Slice`/`SliceMut` naming, owning element types,
+  String migration.
 
 ### fsht-02:01-02.09.02 — container move semantics
 
-Status: accepted (target fsht-02:01). Spec: —
+Status: accepted → in development (target fsht-02:01). Spec: draft —
+[spec/20-dynamic-collections.md](../../spec/20-dynamic-collections.md)
+§3 (not yet normative). Reference implementation: Penstock
+0.1.0-INDEV.
 
 Move semantics and destruction for owned containers (drop on scope
 exit, move-out invalidation) as part of fsht-02:01-02.09.01's model.
 
+**First cut (in development, Penstock).** For `Vec<T>` bindings:
+
+- **drop on scope exit** — the compiler emits scope-exit drops in
+  reverse declaration order, after the scope's `defer`s; a by-value
+  container parameter drops at callee exit; `break`/`continue` flush
+  the loop body's drops; every return path drops what it still owns.
+  Drops are idempotent: the runtime frees only a non-null data pointer
+  and nulls it after every transfer or release.
+- **move-out invalidation** — `let b = a;`, assignment, by-value
+  arguments (with or without `give()`), and `return v;` transfer
+  ownership; the source binding is invalidated (use-after-move is
+  F0301) and left inert at runtime.
+- **manual release** — `vec_free(&v)` pre-empts the drop; double free,
+  use-after-free and `give()` of a non-owned container are F0301;
+  rebinding a container that still owns its allocation is an error
+  (no silent leak).
+- **first-cut restrictions** (all tracked here): owned containers stay
+  at value level — containers inside user structs/enums/arrays and
+  owning element types are rejected (drop elaboration through user
+  shapes is the follow-up); returning a borrowed view of a *local*
+  container is rejected because it would dangle after the drop (views
+  of parameters stay legal — the caller owns them). The lifetime /
+  escape analysis of fsht-03:02-03.02.10 is the tracked path to
+  lifting these. The prelude `String` deliberately keeps its
+  fsht-01:01 manual `string_free` model in the first cut: `str_of`
+  views routinely escape, so auto-drop for String waits for that same
+  lifetime analysis.
+
 History:
 - fsht-02:01 (accepted) — first accepted.
+- fsht-02:01 (in development) — first cut implemented in Penstock
+  0.1.0-INDEV together with 02.09.01 (the ownership analysis tracks
+  container bindings: alive/freed/moved states, rebinding rule, leak
+  exclusion under the drop guarantee).

@@ -1,0 +1,7 @@
+// fsht-02:01 draft — must be rejected: manual vec_free twice on the same
+// binding is a double free.
+fn main() {
+    let mut v: Vec<i64> = vec_new(i64, 2);
+    vec_free(&v);
+    vec_free(&v);   // rejected
+}

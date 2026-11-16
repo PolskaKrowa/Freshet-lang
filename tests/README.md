@@ -16,6 +16,13 @@ tests/
               rules, strict-FP default, @reproducible thread-invariance)
   fuzz/       seeded random-program generator + differential driver
   run_suite.sh  the top-level runner
+
+fsht-02:01 draft additions: `corpus/13_vec_containers` and
+`negative/n18–n22_vec_*` exercise the in-development dynamic-collection
+rules (registry 02.09.01/02.09.02, draft spec chapter 20). They run
+with the rest of the suite; a compiler without the fsht-02:01 cut will
+fail them (compile errors on unknown builtins), which is the expected
+conformance signal until fsht-02:01 ratifies.
 ```
 
 ## Running

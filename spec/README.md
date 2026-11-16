@@ -67,3 +67,14 @@ entry carries an update target.
 | 18 | [The `fsh` module](18-stdlib.md) | argv, environment, file I/O, test helpers |
 | 19 | [Toolchain & targets](19-toolchain.md) | LLVM matrix, runtime, environment variables |
 | — | [Grammar (consolidated EBNF)](grammar.md) | single-page grammar appendix |
+
+## Draft chapters (fsht-02:01 in development)
+
+Chapters beyond 19 are **drafts for fsht-02:01** — they document the
+first cut shipped in the reference compiler but are NOT normative until
+fsht-02:01 ratifies. They are listed here so the draft is discoverable;
+the ratified fsht-01:01 surface is exactly chapters 00–19 above.
+
+| # | Chapter | Covers |
+|---|---|---|
+| 20 | [Dynamic collections (DRAFT)](20-dynamic-collections.md) | `Vec<T>`, moves/drop, views |
