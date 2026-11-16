@@ -21,7 +21,9 @@ fsht-xx:yy        xx = major (two digits), yy = minor (two digits)
   already-valid program — semantic fixes, removed diagnostics, changed
   defaults. A major bump MAY deprecate; removal happens no earlier than
   one major version after the deprecation notice.
-* Versions are tagged in git as `fsht-xx:yy`. The current version is
+* Versions are tagged in git; because git refnames cannot contain a
+  colon, the tag for `fsht-xx:yy` is spelled `fsht-xx-yy` (this
+  repository: `fsht-01-01`). The current standard is
   [fsht-01:01](spec/README.md).
 
 ## Feature identifiers — `fsht-xx:yy-aa.bb.cc`
