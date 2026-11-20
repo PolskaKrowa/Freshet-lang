@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freshet differential fuzz driver (fsht-01:01).
+"""Freshet differential fuzz driver (fsht-03:03).
 
 Generates random deterministic-output programs (fuzz/gen.py), then builds
 and runs each one under several compiler configurations and compares the

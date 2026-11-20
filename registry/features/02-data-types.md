@@ -1,4 +1,4 @@
-# 02 — data-type features (fsht-01:01)
+# 02 — data-type features (fsht-03:03)
 
 ### fsht-01:01-02.01.01 — scalar integer types
 
@@ -32,17 +32,24 @@ History:
 
 ### fsht-01:01-02.01.05 — `usize` representation
 
-Status: normative, with an open question targeted at fsht-03:02.
+Status: normative; the open question was resolved in fsht-03:02. Spec:
+[ch. 02](../../spec/02-types.md) · [ch. 24 §6](../../spec/24-borrows-lifetimes.md)
 
 `usize` and `u64` are distinct spellings with identical representation.
-Whether `usize` should instead be target-pointer-sized must be resolved
-before 32-bit WebAssembly support (fsht-03:03's wasm targets).
+Whether `usize` should instead be target-pointer-sized had to be
+resolved before 32-bit WebAssembly support — and it was, by fsht-03:02,
+before fsht-03:03 ratified the wasm32 targets.
 
 History:
 - fsht-01:01 — first standardised (identical to `u64`, documented).
 - fsht-03:02 (planned) — decide target-pointer-sized `usize` vs the
   fixed 64-bit representation; whichever way, the decision lands here
   with migration notes.
+- fsht-03:02 (ratified 2026-11-19) — **resolved: `usize` is permanently
+  the fixed 64-bit unsigned integer on every target, wasm32 included**
+  (ch. 24 §6's integer representation model). Migration notes: none
+  required — the representation matches fsht-01:01 on every ratified
+  target; indices, lengths and `sizeof` never change with `--target`.
 
 ### fsht-01:01-02.02.01 — structs and C layout
 
@@ -105,18 +112,33 @@ History:
 
 ### fsht-01:01-02.06.01 — `String` (owned growable buffer)
 
-Status: normative, with a documented ownership gap. Spec: [ch. 10](../../spec/10-strings.md)
+Status: normative; the ownership gap was closed by the fsht-03:02
+migration. Spec: [ch. 10](../../spec/10-strings.md) ·
+[ch. 24 §4](../../spec/24-borrows-lifetimes.md)
 
 `{ data: *u8, len, cap }` with `string_new/from/append/free`,
-`str_cat`, `str_of`. The ownership state machine does NOT track String
-allocations yet — frees are explicit or deferred.
+`str_cat`, `str_of`.
 
 History:
-- fsht-01:01 — first standardised.
-- fsht-02:01 (planned) — String joins the ownership-checked container
-  model together with Vec/Slice/SliceMut/ByteBuffer
-  (fsht-02:01-02.09.01); the manual-free caveat is removed and the
-  update is recorded here.
+- fsht-01:01 — first standardised; the ownership state machine did
+  NOT track String allocations — frees were explicit or deferred
+  (the documented gap).
+- fsht-02:01 (deferral, corrected at ratification) — the
+  ownership-checked container model landed for `Vec<T>` only
+  (02.09.01/02.09.02; views resolved to `Span<T>`, so no
+  Slice/SliceMut). The String migration onto it is deferred to
+  fsht-03:02 with the lifetime/escape analysis (03.02.10):
+  `str_of` views routinely escape their owner, so auto-drop would
+  dangle them. String keeps the manual `string_free` model and the
+  caveat above until then.
+- fsht-03:02 (ratified 2026-11-19) — **migration delivered** (03.02.10,
+  ch. 24 §4): `String` is ownership-tracked — scope-exit auto-drop,
+  move-out invalidation, pre-emptive `string_free` (binding
+  invalidated), `string_clone`/`string_clear` added; `str_of` views
+  are shared borrows under the `F0310`/`F0311` discipline. Layout
+  unchanged (`{ data, len, cap }`); programs relying on the untracked
+  gap (use-after-`string_free`) were already undefined at runtime in
+  every prior version and are now diagnosed `F0301`.
 
 ### fsht-01:01-02.06.02 — `str` (immutable UTF-8 view)
 
@@ -161,18 +183,21 @@ History:
 
 ### fsht-02:01-02.09.01 — dynamic collections
 
-Status: accepted → in development (target fsht-02:01). Spec: draft —
+Status: normative (fsht-02:01). Spec:
 [spec/20-dynamic-collections.md](../../spec/20-dynamic-collections.md)
-(not yet normative). Reference implementation: Penstock 0.1.0-INDEV
-(conformance: `tests/pos_vec_*.fsht` / `tests/neg_vec_*.fsht` in the
-compiler tree; corpus `tests/corpus/13_vec_containers.fsht` and
-negative `tests/negative/n18..n22` here).
+Reference implementation: Penstock 0.1.0-INDEV (conformance:
+`tests/pos_vec_*.fsht` / `tests/neg_vec_*.fsht` in the compiler tree;
+corpus `tests/corpus/14_vec_containers.fsht` and negative
+`tests/negative/n15..n19` here).
 
-`Vec<T>` (dynamically growing array), `Slice<T>` / `SliceMut<T>`
-(borrowed views), `ByteBuffer` (dynamic byte storage), and a properly
-managed UTF-8 `String`. Surface: `push/pop/insert/remove`,
+`Vec<T>` (dynamically growing array), borrowed views (ratified as
+`Span<T>` — no separate slice types), `ByteBuffer` (dynamic byte
+storage, = `Vec<u8>`), and a properly managed UTF-8 `String`
+(migrated onto this model in fsht-03:02 — history below). Surface:
+`push/pop/insert/remove`,
 `reserve/resize/truncate`, `capacity/len/is_empty`, slicing without
-copying, efficient bulk copying, custom allocators.
+copying; efficient bulk copying and custom allocators remain
+registry-tracked deferrals.
 
 **The binding requirement:** container allocations MUST be integrated
 with the ownership analysis. A language with sophisticated memory
@@ -181,7 +206,7 @@ proper ownership/move/destruction model for container types is the
 prerequisite for a reliable standard library. This is the single
 largest immediate omission in fsht-01:01.
 
-**First cut (in development, Penstock).** `Vec<T>` is a prelude
+**Ratified surface (fsht-02:01).** `Vec<T>` is a prelude
 generic struct `{ data: *T, len: u64, cap: u64 }` monomorphised per
 element type through the ordinary generic machinery; the surface
 follows the String free-function style:
@@ -200,21 +225,22 @@ follows the String free-function style:
   `vec_slice(v, lo, hi)` yield `Span<T>`; a `Vec<u8>` is the
   ByteBuffer shape.
 
-Elements are restricted to non-owning types (scalars, `str`, POD
+Elements were restricted to non-owning types (scalars, `str`, POD
 structs, enums, arrays, spans); owning elements (`Vec<String>`,
-`Vec<Vec<T>>`) are rejected with a diagnostic until drop elaboration
-through nested shapes lands (tracked with 02.09.02). Container
-mutation inside `parfor` bodies is rejected (race on the header /
-allocator contention); the supported parallel shape is a `Span<T>`
-view taken before the loop. Custom allocators and bulk-copy APIs are
-NOT in the first cut.
+`Vec<Vec<T>>`) were rejected with a diagnostic until drop elaboration
+through nested shapes landed — which fsht-03:02 delivered (history
+below; the fsht-02:01 restriction was ratified scope, tracked with
+02.09.02). Container mutation inside `parfor` bodies is rejected (race
+on the header / allocator contention); the supported parallel shape is
+a `Span<T>` view taken before the loop. Custom allocators and
+bulk-copy APIs are NOT in fsht-02:01 (registry-tracked deferrals).
 
-**Open design question for fsht-02:01 ratification:** distinct
-`Slice<T>` / `SliceMut<T>` types versus absorbing borrowed views into
-the existing `Span<T>` (the first cut delivers views through
-`Span<T>`; `Slice`/`SliceMut` may be resolved as aliases or dropped
-at ratification). The `String` migration onto the container model is
-deferred to fsht-03:02 (see below).
+**Ratified resolution (fsht-02:01):** borrowed views fold into the
+existing `Span<T>` — no distinct `Slice<T>` / `SliceMut<T>` types
+(`v[lo..hi]` and `vec_slice` yield `Span<T>`; in-place element
+mutation goes through the `v[i]` lvalue). `Slice`/`SliceMut` are
+dropped from the roadmap. The `String` migration onto the container
+model was deferred to fsht-03:02 and delivered with it (see below).
 
 History:
 - fsht-02:01 (accepted) — first accepted for fsht-02:01 with the
@@ -228,18 +254,28 @@ History:
   fsht-02:01 ratifies. Deferrals carried forward: custom allocators,
   bulk copying, `Slice`/`SliceMut` naming, owning element types,
   String migration.
+- fsht-02:01 (ratified 2026-11-19) — chapter 20 promoted to normative.
+  The naming question is closed: views are `Span<T>` only —
+  `Slice`/`SliceMut` dropped. Remaining deferrals carried forward:
+  custom allocators, bulk copying, owning element types (with
+  02.09.02), String migration (fsht-03:02).
+- fsht-03:02 (ratified 2026-11-19) — the owning-element restriction
+  and the value-level restriction (containers inside user
+  structs/enums/arrays) are lifted by the drop elaboration of
+  03.02.10 (ch. 24 §5); String migration delivered with the same
+  increment (02.06.01). Custom allocators and bulk-copy APIs remain
+  deferrals.
 
 ### fsht-02:01-02.09.02 — container move semantics
 
-Status: accepted → in development (target fsht-02:01). Spec: draft —
+Status: normative (fsht-02:01). Spec:
 [spec/20-dynamic-collections.md](../../spec/20-dynamic-collections.md)
-§3 (not yet normative). Reference implementation: Penstock
-0.1.0-INDEV.
+§3. Reference implementation: Penstock 0.1.0-INDEV.
 
 Move semantics and destruction for owned containers (drop on scope
 exit, move-out invalidation) as part of fsht-02:01-02.09.01's model.
 
-**First cut (in development, Penstock).** For `Vec<T>` bindings:
+**Ratified surface (fsht-02:01).** For `Vec<T>` bindings:
 
 - **drop on scope exit** — the compiler emits scope-exit drops in
   reverse declaration order, after the scope's `defer`s; a by-value
@@ -255,7 +291,7 @@ exit, move-out invalidation) as part of fsht-02:01-02.09.01's model.
   use-after-free and `give()` of a non-owned container are F0301;
   rebinding a container that still owns its allocation is an error
   (no silent leak).
-- **first-cut restrictions** (all tracked here): owned containers stay
+- **ratified restrictions** (all tracked here): owned containers stay
   at value level — containers inside user structs/enums/arrays and
   owning element types are rejected (drop elaboration through user
   shapes is the follow-up); returning a borrowed view of a *local*
@@ -273,3 +309,13 @@ History:
   0.1.0-INDEV together with 02.09.01 (the ownership analysis tracks
   container bindings: alive/freed/moved states, rebinding rule, leak
   exclusion under the drop guarantee).
+- fsht-02:01 (ratified 2026-11-19) — normative together with
+  02.09.01; the restrictions above are ratified scope, tracked for
+  lifting by fsht-03:02-03.02.10.
+- fsht-03:02 (ratified 2026-11-19) — the tracked lifting delivered:
+  owned containers now appear inside user structs/enums/arrays and
+  as owning elements (`Vec<String>`, `Vec<Vec<T>>`) — drops walk the
+  shape innermost-first, moves transfer whole-shape, `vec_clone`
+  deep-copies element-wise (ch. 24 §5). The return-a-view-of-a-local
+  rejection was reclassified `F0301` → `F0311` (same rejection,
+  precise escape diagnostic — 03.02.09/03.02.10).

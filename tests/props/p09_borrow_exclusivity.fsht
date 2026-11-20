@@ -1,0 +1,57 @@
+// property: the borrowing discipline is configuration-stable — legal
+// shapes (shared borrows coexisting, sequential mutable borrows after
+// last use, views surviving in-place writes, borrowed-mut parameters,
+// the tracked String lifecycle with clone and pre-emptive free, and
+// struct-shaped containers) compute identically across -O0 / -O3 /
+// --no-loop-opts builds. Prints ALL OK when every check passes.
+struct Bag { total: i64, xs: Vec<i64> }
+
+fn fill(p: borrowed mut *i64, n: usize) {
+    for (i in 0..n) { p[i] = (i as i64) * 3; }
+}
+fn drain(v: borrowed mut Vec<i64>) -> usize {
+    vec_push(&mut v, 90);
+    return v.len;
+}
+fn main() {
+    let mut ok: i64 = 0;
+    // sequential mutable borrows + borrowed mut pointer parameter
+    let mut buf: [i64; 4] = [0, 0, 0, 0];
+    let p: *i64 = &mut buf[0];
+    fill(p, 4);                        // [0, 3, 6, 9]
+    if (buf[3] == 9) { ok = ok + 1; }
+    let q: *i64 = &mut buf[0];         // re-borrow after p's last use
+    q[0] = 5;                          // [5, 3, 6, 9]
+    if (buf[0] == 5) { ok = ok + 1; }
+    // shared borrows coexist
+    let r1: *i64 = &buf[1];
+    let r2: *i64 = &buf[2];
+    if (r1[0] == 3 && r2[0] == 6) { ok = ok + 1; }
+    // views survive in-place element writes (no reallocation)
+    let mut v: Vec<i64> = vec_new(i64, 2);
+    vec_push(&mut v, 10);
+    vec_push(&mut v, 20);
+    let view: Span<i64> = v[0..2];
+    v[1] = 25;
+    if (view[0] == 10 && view[1] == 25) { ok = ok + 1; }
+    // borrowed mut container parameter: caller sees the callee's push
+    let n: usize = drain(&mut v);      // len 2 -> 3, v[2] = 90
+    if (n == 3 && v[2] == 90) { ok = ok + 1; }
+    // tracked String: append + clone + pre-emptive free + auto-drop
+    let mut s: String = string_from("fresh");
+    string_append(&mut s, "et");       // "freshet"
+    let c: String = string_clone(&s);
+    if (str_eq(str_of(&s), str_of(&c))) { ok = ok + 1; }
+    string_free(&s);                   // s invalidated; c unaffected
+    if (str_of(&c).len == 7) { ok = ok + 1; }
+    // containers inside structs: field writes + whole-shape drop
+    let mut bag: Bag = Bag { total: 0, xs: vec_new(i64, 1) };
+    vec_push(&mut bag.xs, 40);
+    bag.total = bag.xs[0] * 2;
+    if (bag.total == 80) { ok = ok + 1; }
+    // fmt String auto-drops at scope exit: no leak, no double free
+    let digits: String = fmt_i64(12321);
+    if (str_of(&digits).len == 5) { ok = ok + 1; }
+    if (ok == 9) { print("ALL OK"); } else { print("FAILED"); }
+    println();
+}

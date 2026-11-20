@@ -1,13 +1,16 @@
-# 20 — Dynamic collections (DRAFT — fsht-02:01 in development)
+# 20 — Dynamic collections (normative in fsht-02:01)
 
-> **Status.** This chapter is a DRAFT for the fsht-02:01 increment
-> (registry entries [fsht-02:01-02.09.01](../registry/features/02-data-types.md)
-> and [fsht-02:01-02.09.02](../registry/features/02-data-types.md)).
-> It documents the first cut implemented in the reference compiler
-> (Penstock 0.1.0-INDEV) and is NOT normative until fsht-02:01
-> ratifies. Items marked *open* are design questions to settle at
-> ratification. Nothing here alters fsht-01:01 programs: the types and
-> builtins of this chapter did not exist in fsht-01:01.
+> **Status.** Normative since fsht-02:01 (ratified 2026-11-19; first
+> cut implemented in Penstock 0.1.0-INDEV). This chapter is a pure
+> extension of fsht-01:01 — the types and builtins defined here did not
+> exist before fsht-02:01, so no earlier program changes meaning.
+> Registry entries
+> [fsht-02:01-02.09.01](../registry/features/02-data-types.md) and
+> [fsht-02:01-02.09.02](../registry/features/02-data-types.md).
+> Ratification closed the draft's one open question: there are no
+> separate `Slice<T>`/`SliceMut<T>` types (see §1). Everything beyond
+> this chapter's surface is a registry-tracked deferral, not a silent
+> omission.
 
 ## 1. `Vec<T>` — the dynamic container (fsht-02:01-02.09.01)
 
@@ -49,16 +52,20 @@ Vec<T> = { data: *T, len: u64, cap: u64 }
   checked), `vec_get(v, i) -> Option<T>`,
   `v.len` / `v.cap` (plain struct fields) and
   `vec_len` / `vec_capacity` / `vec_is_empty`.
-* **Views without copying** (the `Slice`/`SliceMut` role — *open*:
-  whether those names exist or views fold into `Span<T>`):
-  `v[lo..hi]` and `vec_slice(v, lo, hi)` yield `Span<T>`;
-  slicing validates `0 <= lo <= hi <= v.len`.
+* **Views without copying.** `v[lo..hi]` and `vec_slice(v, lo, hi)`
+  yield `Span<T>`. This is the ratified resolution of the draft's
+  `Slice`/`SliceMut` naming question: **no separate slice types exist
+  in the standard** — `Span<T>` is the container view (a `Vec<T>`'s
+  `{ data, len }` prefix matches the `Span<T>` layout, so taking a
+  view is two loads), and in-place element mutation goes through the
+  `v[i]` lvalue. Slicing validates `0 <= lo <= hi <= v.len`.
 * A `Vec<u8>` is the dynamic byte buffer (`ByteBuffer`).
 
-**Element types (first cut).** Elements MUST be non-owning: scalars,
+**Element types (fsht-02:01).** Elements MUST be non-owning: scalars,
 `str` views, POD structs, enums, fixed arrays, spans. Owning elements
-(`Vec<String>`, `Vec<Vec<T>>`) are rejected (`F0201`) until drop
-elaboration through nested shapes lands.
+(`Vec<String>`, `Vec<Vec<T>>`) were rejected (`F0201`) until drop
+elaboration through nested shapes landed — which it did, in fsht-03:02
+([chapter 24 §5](24-borrows-lifetimes.md)).
 
 **Parallelism.** Container mutation inside a `parfor` body is rejected
 (`F0307`): growth reallocates (allocator contention) and the header
@@ -110,19 +117,24 @@ inside the ownership analysis.** For `Vec<T>` bindings:
   containers (their lifetime is the compiler's job, not a program
   obligation).
 
-**First-cut restrictions** (tracked by the registry; the lifetime /
-escape analysis planned as fsht-03:02-03.02.10 lifts them):
+**Ratified restrictions** (normative for fsht-02:01; tracked in the
+registry — the lifetime / escape analysis of fsht-03:02 lifted them
+as planned):
 
-1. Owned containers stay at value level: a `Vec<T>` inside a user
-   struct, an enum payload or a fixed array is rejected (`F0201`) —
-   drop elaboration would have to walk user shapes.
-2. Returning a borrowed view of a **local** container is rejected
+1. Owned containers stayed at value level: a `Vec<T>` inside a user
+   struct, an enum payload or a fixed array was rejected (`F0201`) —
+   drop elaboration would have to walk user shapes. **fsht-03:02
+   lifted this** (ch. 24 §5).
+2. Returning a borrowed view of a **local** container was rejected
    (`F0301`): the drop at fn exit would dangle the view. Views of
-   *parameters* stay legal — the caller owns them. Returning the
-   container itself is a move and legal.
-3. The prelude `String` keeps its fsht-01:01 manual `string_free`
-   model: `str_of(&s)` views routinely escape, so auto-drop for
-   `String` waits for the same lifetime analysis.
+   *borrowed parameters* stayed legal — the caller owns them;
+   returning the container itself is a move and legal. **fsht-03:02
+   reclassified the rejection to `F0311` with a precise escape
+   diagnostic** (ch. 24 §3); it remains rejected — it was always
+   unsound.
+3. The prelude `String` kept its fsht-01:01 manual `string_free`
+   model: `str_of(&s)` views routinely escaped their owner. **fsht-03:02
+   migrated `String` onto the tracked model** (ch. 24 §4).
 
 ## 4. Effects and optimisation
 

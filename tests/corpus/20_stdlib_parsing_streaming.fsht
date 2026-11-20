@@ -1,0 +1,166 @@
+// fsht-03:01 corpus (registry 05.04.01/05.05.01/05.06.01/08.01.04) —
+// the expanded standard library: numeric text parsing over Result,
+// checked/saturating/wrapping variants, conversions, the decomposed
+// modules (io/bits/numeric/random) and streaming I/O.
+import io;
+import bits;
+import numeric;
+import random;
+
+// ? propagation over the library's Result surfaces (ch. 11 + ch. 23 §4)
+fn write_stream(path: str) -> Result<usize, IoError> {
+    let mut w: Writer = io::writer_open(path)?;
+    let n: usize = io::writer_write(&mut w, "alpha\nbeta\ngamma\n")?;
+    io::writer_close(&mut w);          // pre-emptive release; the scope-exit close is the idempotent backstop
+    return Ok(n);
+}
+fn read_lines(path: str) -> Result<i64, IoError> {
+    let mut r: Reader = io::reader_open(path)?;
+    let mut total: i64 = 0;            // alpha=5 beta=4 gamma=5 -> 14
+    let mut lines: i64 = 0;
+    match (io::reader_read_line(&mut r)) {
+        Ok(l1) => { total = total + (str_of(&l1).len as i64); lines = lines + 1; }
+        Err(e) => { }
+    }
+    match (io::reader_read_line(&mut r)) {
+        Ok(l2) => { total = total + (str_of(&l2).len as i64); lines = lines + 1; }
+        Err(e) => { }
+    }
+    match (io::reader_read_line(&mut r)) {
+        Ok(l3) => { total = total + (str_of(&l3).len as i64); lines = lines + 1; }
+        Err(e) => { }
+    }
+    if (lines != 3) { return Ok(-1); }
+    // end of file: read_line reports Eof instead of an empty ambiguous value
+    match (io::reader_read_line(&mut r)) {
+        Ok(l4) => { print("more "); }
+        Err(e) => { print("eof "); }
+    }
+    io::reader_close(&mut r);
+    return Ok(total);
+}
+fn read_bytes(path: str) -> Result<usize, IoError> {
+    let mut r: Reader = io::reader_open(path)?;
+    let mut b: [u8; 6] = [0, 0, 0, 0, 0, 0];
+    let view: Span<u8> = span(b);      // out-region: reader_read fills through it
+    let n: usize = io::reader_read(&mut r, view)?;      // "alpha\n" -> 6
+    io::reader_close(&mut r);
+    print_i64(n as i64); print(" "); print_i64(view[0] as i64); println();  // 6 97
+    return Ok(n);
+}
+
+fn main() {
+    // ---- parsing (ch. 23 §1) ----
+    match (parse_i64("  -42\n")) {         // whitespace skipped
+        Ok(v) => { print_i64(v); println(); }              // -42
+        Err(e) => { print("err"); println(); }
+    }
+    match (parse_i64("12x")) {
+        Ok(v) => { print_i64(v); println(); }
+        Err(e) => { print("inv"); println(); }            // inv (Invalid)
+    }
+    match (parse_i64("99999999999999999999")) {
+        Ok(v) => { print_i64(v); println(); }
+        Err(e) => { print("oor"); println(); }            // oor (OutOfRange)
+    }
+    match (parse_u64("-5")) {
+        Ok(v) => { print_i64(v as i64); println(); }
+        Err(e) => { print("inv"); println(); }            // inv (sign rejected)
+    }
+    match (parse_f64("2.5e2")) {
+        Ok(v) => { print_f64(v, 1); println(); }          // 250.0
+        Err(e) => { print("err"); println(); }
+    }
+    match (parse_f64("nan")) {
+        Ok(v) => { if (v != v) { print("isnan"); println(); } }   // isnan
+        Err(e) => { print("err"); println(); }
+    }
+    // round-trip law: parse_i64(str_of(&fmt_i64(x))) == Ok(x)
+    let s: String = fmt_i64(9876543210);
+    let back: Result<i64, ParseError> = parse_i64(str_of(&s));
+    match (back) {
+        Ok(v) => { print_i64(v); println(); }              // 9876543210
+        Err(e) => { print("bad"); println(); }
+    }
+
+    // ---- checked / saturating / wrapping (ch. 23 §2) ----
+    let a: i8 = 120;
+    let b: i8 = 10;
+    match (checked_add(a, b)) {
+        Some(v) => { print_i64(v as i64); println(); }
+        None => { print("none"); println(); }             // none (i8 overflow)
+    }
+    print_i64(saturating_add(a, b) as i64); println();    // 127
+    let z: i64 = 0;
+    let mx: i64 = int_max(z);
+    match (checked_add(mx, 1)) {
+        Some(v) => { print_i64(v); println(); }
+        None => { print("none"); println(); }             // none
+    }
+    print_i64(wrapping_add(mx, 1)); println();            // -9223372036854775808
+    print_i64(saturating_sub(int_min(z), 100)); println(); // -9223372036854775808 (clamped)
+    match (checked_div(7, 0)) {
+        Some(v) => { print_i64(v); println(); }
+        None => { print("none"); println(); }             // none (divisor 0)
+    }
+    match (checked_rem(7, 0)) {
+        Some(v) => { print_i64(v); println(); }
+        None => { print("none"); println(); }             // none
+    }
+    print_i64(int_max(a) as i64); print(" ");
+    print_i64(int_min(a) as i64); println();              // 127 -128
+
+    // ---- conversions (ch. 23 §3) ----
+    let wide: i64 = 1000;
+    let narrow_opt: Option<i8> = checked_cast(wide);      // U = i8 from the binding
+    match (narrow_opt) {
+        Some(v) => { print_i64(v as i64); println(); }
+        None => { print("none"); println(); }             // none (1000 > i8 max)
+    }
+    let narrow: i8 = saturating_cast(wide);               // U = i8 from the binding
+    print_i64(narrow as i64); println();                   // 127
+    let huge: f64 = 1.5e300;
+    let huge_opt: Option<i64> = checked_cast(huge);       // U = i64 from the binding
+    match (huge_opt) {
+        Some(v) => { print_i64(v); println(); }
+        None => { print("none"); println(); }             // none (out of range)
+    }
+    let fr: f64 = 42.5;
+    let ft: i64 = saturating_cast(fr);                    // truncate toward zero
+    print_i64(ft); println();                             // 42
+
+    // ---- module decomposition (ch. 23 §5) ----
+    print_i64(bits::popcount(255 as u64) as i64); print(" ");   // 8
+    print_i64(bits::bswap16(255 as u16) as i64); println();     // 65280
+    let ca: i64 = 12;
+    let cb: i64 = 18;
+    print_i64(numeric::gcd(ca, cb)); print(" ");                 // 6
+    let neg: i64 = -5;
+    print_i64(numeric::abs(neg)); print(" ");                   // 5
+    let c15: i64 = 15;
+    let c0: i64 = 0;
+    let c10: i64 = 10;
+    print_i64(numeric::clamp(c15, c0, c10)); println();         // 10
+    // random: xorshift64* — the reproducible stream the harnesses use
+    let mut st: u64 = 88172645463325252;
+    print_u64(random::sm64_next(&mut st)); print(" ");          // 16620430977058721579
+    print_u64(random::sm64_next(&mut st)); println();           // 12052379865695375093
+
+    // ---- streaming I/O (ch. 23 §4) ----
+    match (write_stream("corpus20.tmp")) {
+        Ok(n) => { print_i64(n as i64); println(); }      // 18 bytes written
+        Err(e) => { print("ioerr"); println(); }
+    }
+    match (read_lines("corpus20.tmp")) {
+        Ok(t) => { print_i64(t); println(); }            // eof 14
+        Err(e) => { print("ioerr"); println(); }
+    }
+    match (read_bytes("corpus20.tmp")) {
+        Ok(n) => { }
+        Err(e) => { print("ioerr"); println(); }
+    }
+    match (io::remove("corpus20.tmp")) {
+        Ok(done) => { print("cleaned"); println(); }      // cleaned
+        Err(e) => { print("rmerr"); println(); }
+    }
+}

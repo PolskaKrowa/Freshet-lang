@@ -1,0 +1,90 @@
+// fsht-03:02 corpus (registry 03.02.09/03.02.10) — mutable borrows
+// with exclusivity, the lifetime/escape discipline, the ownership-
+// tracked String migration, and drop elaboration through user shapes.
+// Every shape here is the LEGAL side of each rule; the negative twins
+// n26-n28 pin the illegal side.
+
+// borrowed mut parameters: exclusive write access through a pointer
+fn fill(p: borrowed mut *i64, n: usize) {
+    for (i in 0..n) { p[i] = (i as i64) * 2; }
+}
+// borrowed mut container parameter: callee may grow it
+fn drain(v: borrowed mut Vec<i64>) -> usize {
+    vec_push(&mut v, 90);               // re-borrow of the caller's storage
+    return v.len;
+}
+// views of borrowed parameters stay legal to READ inside the callee
+fn sum_view(values: Span<i64>) -> i64 {
+    let mut total: i64 = 0;
+    for (i in 0..values.len) { total = total + values[i]; }
+    return total;
+}
+// containers inside user structs: drop elaboration walks the shape
+struct Bag { name: String, xs: Vec<i64> }
+
+fn main() {
+    // ---- borrow expressions + borrowed mut params (ch. 24 §1) ----
+    let mut buf: [i64; 4] = [0, 0, 0, 0];
+    let p: *i64 = &mut buf[0];          // exclusive mutable borrow of the array storage
+    fill(p, 4);                          // writes p[0..4] = 0 2 4 6
+    print_i64(buf[0]); print(" "); print_i64(buf[3]); println();   // 0 6
+    let q: *i64 = &mut buf[0];          // re-borrow after p's last use: legal
+    q[0] = 5;                           // write through the borrow
+    print_i64(buf[0]); println();        // 5
+    let r1: *i64 = &buf[1];             // shared borrows coexist
+    let r2: *i64 = &buf[2];
+    print_i64(r1[0]); print(" "); print_i64(r2[0]); println();      // 2 4
+
+    // ---- views are shared borrows; in-place writes do not invalidate (ch. 24 §2) ----
+    let mut v: Vec<i64> = vec_new(i64, 2);
+    vec_push(&mut v, 10);               // explicit &mut spelling
+    vec_push(&v, 20);                   // legacy & spelling of the same mutable borrow
+    let view: Span<i64> = v[0..2];
+    v[1] = 25;                          // owner in-place write: the view stays valid
+    print_i64(view[0]); print(" "); print_i64(view[1]); println();  // 10 25
+    print_i64(sum_view(v[0..v.len])); println();                    // 35
+
+    // ---- borrowed mut container parameter ----
+    let n: usize = drain(&mut v);        // pushes 90; len was 2 -> 3
+    print_i64(n as i64); print(" "); print_i64(v[2]); println();    // 3 90
+
+    // ---- the String migration (ch. 24 §4) ----
+    let mut s: String = string_from("portage");
+    string_append(&mut s, " creek");     // growth: no live views of s
+    let view_s: str = str_of(&s);        // shared view of the tracked String
+    print(view_s); println();             // portage creek
+    print_i64(view_s.len); println();    // 13
+    let owned: String = string_clone(&s);   // deep copy; both shared, coexist
+    print(str_of(&owned)); println();     // portage creek
+    string_free(&s);                     // pre-emptive release: s invalidated, owned unaffected
+    print(str_of(&owned)); println();     // portage creek
+    let digits: String = fmt_i64(1234);  // owned, AUTO-DROPS at scope exit
+    print(str_of(&digits)); println();    // 1234
+
+    // ---- drop elaboration through user shapes (ch. 24 §5) ----
+    let mut bag: Bag = Bag { name: string_from("bits"), xs: vec_new(i64, 2) };
+    vec_push(&mut bag.xs, 7);
+    vec_push(&mut bag.xs, 9);
+    string_append(&mut bag.name, "!");
+    print(str_of(&bag.name)); print(" ");
+    print_i64(bag.xs[0] + bag.xs[1]); println();   // bits! 16
+    // owning elements: Vec<String>
+    let mut words: Vec<String> = vec_new(String, 2);
+    vec_push(&mut words, string_from("alpha"));
+    vec_push(&mut words, string_from("beta"));
+    print(str_of(&words[0])); print(" ");
+    print(str_of(&words[1])); println();           // alpha beta
+    let words2: Vec<String> = vec_clone(words);    // element-wise deep copy
+    print(str_of(&words2[1])); print(" ");
+    print_i64(words2.len); println();              // beta 2
+    // nested containers: Vec<Vec<i64>> — moves transfer whole-shape
+    let mut grid: Vec<Vec<i64>> = vec_new(Vec<i64>, 1);
+    let mut row: Vec<i64> = vec_new(i64, 2);
+    vec_push(&mut row, 1);
+    vec_push(&mut row, 2);
+    vec_push(&mut grid, row);                     // row moved into the container
+    print_i64(grid[0][0] + grid[0][1]); println();  // 3
+    // every remaining binding drops at scope exit — innermost-first,
+    // exactly once: grid rows, words/words2 elements, bag fields,
+    // owned, digits, v, and the arrays
+}

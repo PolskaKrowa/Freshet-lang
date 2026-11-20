@@ -5,13 +5,15 @@
 # The hosted-runner build downloads the pinned LLVM SDK on first use
 # (Penstock's CMake handles this) and can take a while; the job is
 # therefore manual/dispatch plus weekly, and every push to the spec.
+# The fsht-03:03 per-target matrix (spec ch. 25's tested-before-declared
+# gate) lives in targets.yml, alongside this workflow.
 name: conformance
 on:
   workflow_dispatch:
     inputs:
       penstock_repo:
         description: 'Penstock repository (owner/repo)'
-        default: 'OWNER/Penstock'
+        default: 'PolsksaKrowa/Penstock'
         required: true
   schedule:
     - cron: '0 4 * * 1'   # weekly, Monday 04:00 UTC
@@ -24,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      PENSTOCK_REPO: ${{ github.event.inputs.penstock_repo || 'OWNER/Penstock' }}
+      PENSTOCK_REPO: ${{ github.event.inputs.penstock_repo || 'PolsksaKrowa/Penstock' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

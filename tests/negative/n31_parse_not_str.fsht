@@ -1,0 +1,8 @@
+// fsht-03:01: parse functions require a str argument — F0201 (the
+// counterpart of fmt_i64's argument rule).
+fn main() {
+    match (parse_i64(42)) {
+        Ok(v) => { print_i64(v); println(); }
+        Err(e) => { print("err"); println(); }
+    }
+}

@@ -1,4 +1,4 @@
-# Contributing to the Freshet standard (fsht-01:01)
+# Contributing to the Freshet standard (fsht-03:03)
 
 This repository is designed to be modified: the standard is a living
 document, the registry is a ledger, and the suites grow with every
@@ -12,7 +12,9 @@ feature. This file is the rulebook for changing it.
 2. **Accepted** — a PR adds the registry entry with status `accepted`
    and a target version (`fsht-vv:ww`). The design constraint text goes
    in the entry. Accepted designs are commitments, not curiosities: the
-   fsht-02/03 roadmap entries are all in this state.
+   fsht-03 roadmap entries were all in this state until their
+   2026-11-19 ratification; the next accepted designs will carry
+   fsht-04 targets.
 3. **Normative** — when the reference implementation ships the feature,
    the spec chapters gain the normative text and the entry flips to
    `normative`. The identifier's `xx:yy` MUST be the version that first
@@ -60,9 +62,11 @@ feature. This file is the rulebook for changing it.
   reviews; line comments `//` in Freshet sources.
 * `penstock fmt` passes on every committed `.fsht` file (the formatter's
   token-identity gate makes this safe).
-* CI (`.github/workflows/`) runs the suite self-check on every PR and
-  the conformance suite when a Penstock checkout is available; keep both
-  green.
+* CI (`.github/workflows/`) runs the suite self-check on every PR, the
+  conformance suite when a Penstock checkout is available, and the
+  fsht-03:03 target matrix (`targets.yml`) on its cadence — a target
+  row that is not green MUST NOT be declared supported (spec ch. 25 §3).
+  Keep all three green.
 
 ## Committing
 

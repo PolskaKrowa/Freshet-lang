@@ -1,4 +1,4 @@
-# Subset taxonomy (fsht-01:01)
+# Subset taxonomy (fsht-03:03)
 
 The `aa.bb` part of a feature identifier: `aa` names the major subset,
 `bb` the minor subset, `cc` the exact feature. This table is normative
@@ -13,7 +13,7 @@ for identifier allocation.
 | 03 | memory — allocation, ownership, unsafe, data stacks |
 | 04 | parallelism — parfor execution, reductions, scheduling |
 | 05 | I/O — print/stdio, formatting, files, the `fsh` module |
-| 06 | generics — templates, constraints (and, later, traits) |
+| 06 | generics — templates, constraints, traits, const generics |
 | 07 | modules & FFI — imports, projects, extern fn, function pointers |
 | 08 | numeric semantics — integer and floating-point rules |
 | 09 | diagnostics — the F-code registry, severity policy, analysis passes |
@@ -37,9 +37,9 @@ for identifier allocation.
 | 02 | 06 | strings (`str`, `String`) |
 | 02 | 07 | Option / Result |
 | 02 | 08 | enums and tagged unions |
-| 02 | 09 | dynamic containers: Vec<T> (in development, fsht-02:01; Slice/SliceMut naming open — views via Span<T>; ByteBuffer = Vec<u8>; String migration deferred) |
+| 02 | 09 | dynamic containers: `Vec<T>` (fsht-02:01) — views via `Span<T>` (no separate slice types); `ByteBuffer` = `Vec<u8>`; String migrated onto the container model in fsht-03:02 |
 | 03 | 01 | allocation primitives |
-| 03 | 02 | ownership & borrowing |
+| 03 | 02 | ownership & borrowing (mutable borrows with exclusivity + lifetime/escape refinement: fsht-03:02) |
 | 03 | 03 | data stacks |
 | 04 | 01 | execution model |
 | 04 | 02 | reductions |
@@ -48,13 +48,13 @@ for identifier allocation.
 | 05 | 01 | print/stdio |
 | 05 | 02 | formatting |
 | 05 | 03 | the `fsh` module |
-| 05 | 04 | (reserved) parsing (parse_i64/parse_f64) |
-| 05 | 05 | (reserved) streaming I/O |
-| 05 | 06 | (reserved) library decomposition core/alloc/... |
+| 05 | 04 | parsing: `parse_i64`/`parse_u64`/`parse_f64` over `Result<T, ParseError>` (fsht-03:01) |
+| 05 | 05 | streaming I/O: buffered `Reader`/`Writer`, `IoError` (fsht-03:01) |
+| 05 | 06 | library decomposition `core/alloc/collections/string/math/io/numeric/time/bits/random` (fsht-03:01) |
 | 05 | 07 | (reserved) async I/O |
 | 06 | 01 | monomorphisation |
-| 06 | 02 | (reserved) user-defined traits |
-| 06 | 03 | (reserved) const generics |
+| 06 | 02 | user-defined traits (fsht-02:02 — static dispatch through monomorphisation) |
+| 06 | 03 | const generics (fsht-02:03 — `const N: usize` + `const fn`) |
 | 06 | 04 | (reserved) closures |
 | 07 | 01 | modules & project manifest |
 | 07 | 02 | function pointers & callbacks |
@@ -68,7 +68,7 @@ for identifier allocation.
 | 09 | 04 | (reserved) memory/allocation diagnostics |
 | 10 | 01 | backend matrix |
 | 10 | 02 | runtime |
-| 10 | 03 | (reserved) target-aware runtime |
+| 10 | 03 | target-aware runtime: `runtime/common + platforms/{linux,windows,wasm,baremetal}` (fsht-03:03) |
 | 10 | 04 | tooling (test/fmt/lint/LSP/debug) |
 | 10 | 05 | (reserved) package management |
 | 10 | 06 | (reserved) numerical profiling report |

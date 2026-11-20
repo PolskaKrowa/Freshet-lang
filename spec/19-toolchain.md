@@ -31,14 +31,17 @@ major AND runtime optimisation level, so a runtime produced by one
 toolchain is never reused after a switch.
 
 **`--target=<triple>`** cross-targets the whole pipeline (triple + data
-layout). fsht-01:01's target story is honest: the flag exists, but the
-runtime's own IR compilation does not yet receive the triple, the
-runtime relies on POSIX/pthreads, and the final link requests
-`-lpthread` unconditionally — the target-aware runtime decomposition
-(common / platforms / linux / windows / wasm / baremetal) is the
-fsht-03:03 update (registry `fsht-03:03-10.03.01`), aiming at Linux
-x86-64, Linux AArch64, Windows x86-64, WebAssembly WASI and standalone
-browser wasm.
+layout). fsht-01:01's target story was honest about its limitation: the
+runtime's own IR compilation did not receive the triple, the runtime
+relied on POSIX/pthreads, and the final link requested `-lpthread`
+unconditionally. The fsht-03:03 update resolved all three
+([chapter 25](25-portable-runtime.md), registry
+`fsht-03:03-10.03.02`): the runtime is decomposed into
+`common/` + `platforms/{linux,windows,wasm,baremetal}`, compiled for
+the requested target, with platform-conditional links — ratifying the
+target set Linux x86-64, Linux AArch64, Windows x86-64, WebAssembly
+WASI and standalone browser wasm, each declared only with green
+per-target runtime tests.
 
 ## Runtime environment
 

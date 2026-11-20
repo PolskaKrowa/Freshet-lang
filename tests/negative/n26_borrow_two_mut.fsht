@@ -1,0 +1,9 @@
+// fsht-03:02: two simultaneous live mutable borrows of one storage
+// — F0310 (one writer or many readers; the first borrow is still live
+// at its later use when the second is created).
+fn main() {
+    let mut x: i64 = 1;
+    let p: *i64 = &mut x;      // mutable borrow #1 (live: used below)
+    let q: *i64 = &mut x;      // mutable borrow #2 of the same place
+    print_i64(p[0] + q[0]); println();
+}

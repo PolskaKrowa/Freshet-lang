@@ -1,0 +1,65 @@
+// property: the numeric library is internally consistent — parse is
+// fmt's inverse, checked_add is Some exactly when the plain add did not
+// wrap, saturating clamps to the type bounds, checked_cast is Some
+// exactly when the value is representable, and checked_div is None
+// exactly where the plain operator traps. Prints ALL OK when every
+// check passes; the runner also compares the output across
+// -O0 / -O3 / --no-loop-opts builds.
+fn main() {
+    let mut ok: i64 = 0;
+    // parse is fmt's inverse (i64 round trip)
+    let s: String = fmt_i64(-9876543210);
+    let back: Result<i64, ParseError> = parse_i64(str_of(&s));
+    match (back) {
+        Ok(v) => { if (v == -9876543210) { ok = ok + 1; } }
+        Err(e) => { }
+    }
+    // parse_u64 round trip on an i64-max value (fits u64)
+    let t: String = fmt_i64(9223372036854775807);
+    let backu: Result<u64, ParseError> = parse_u64(str_of(&t));
+    match (backu) {
+        Ok(v) => { if (v == 9223372036854775807) { ok = ok + 1; } }
+        Err(e) => { }
+    }
+    // checked_add is Some exactly when the plain add did not wrap
+    let z: i64 = 0;
+    let mx: i64 = int_max(z);
+    let mn: i64 = int_min(z);
+    match (checked_add(mx, 1)) {
+        Some(v) => { }
+        None => { ok = ok + 1; }
+    }
+    // wrapping_add is exactly the plain operator
+    if (wrapping_add(mx, 1) == mn) { ok = ok + 1; }
+    // saturating clamps to the type bounds (i8)
+    let a8: i8 = 120;
+    let b8: i8 = 100;
+    let max8: i8 = int_max(a8);
+    let min8: i8 = int_min(a8);
+    if (saturating_add(a8, b8) == max8) { ok = ok + 1; }
+    if (saturating_sub(min8, b8) == min8) { ok = ok + 1; }
+    // checked_cast is Some exactly when representable
+    let big: i64 = 2147483648;              // 2^31, outside i32
+    let nofit: Option<i32> = checked_cast(big);
+    match (nofit) { None => { ok = ok + 1; }, Some(v) => { } }
+    let b32: i64 = 2147483647;              // i32 max, representable
+    let fits: Option<i32> = checked_cast(b32);
+    match (fits) {
+        Some(v) => { if (v == 2147483647) { ok = ok + 1; } }
+        None => { }
+    }
+    // saturating_cast truncates toward zero and clamps magnitude
+    let fr: f64 = 42.75;
+    let ft: i64 = saturating_cast(fr);
+    if (ft == 42) { ok = ok + 1; }
+    let huge: f64 = 1.0e300;
+    let hu: i64 = saturating_cast(huge);
+    if (hu == mx) { ok = ok + 1; }
+    // checked_div is None exactly where the plain operator traps
+    match (checked_div(z, 0)) {
+        Some(v) => { }
+        None => { ok = ok + 1; }
+    }
+    if (ok == 11) { print("ALL OK"); } else { print("FAILED"); }
+    println();
+}

@@ -1,4 +1,4 @@
-# Feature registry (fsht-01:01)
+# Feature registry (fsht-03:03)
 
 The registry is the single ledger of every Freshet feature: what exists
 today (normative), what is accepted for a future version, what is
@@ -10,7 +10,8 @@ version histories.
 ```markdown
 ### fsht-xx:yy-aa.bb.cc — <title>
 
-Status: normative | accepted (target fsht-vv:ww) | proposed | deprecated
+Status: normative | accepted (target fsht-vv:ww) | in development
+(first cut, target fsht-vv:ww) | proposed | deprecated
 Spec: <chapter link> or — (not yet in spec)
 
 <one short paragraph: the rule/feature>
@@ -38,7 +39,7 @@ History:
 | [features/03-memory.md](features/03-memory.md) | 03 — memory (allocation, ownership, unsafe, data stacks) |
 | [features/04-parallelism.md](features/04-parallelism.md) | 04 — parallelism (parfor, reductions, scheduling) |
 | [features/05-io.md](features/05-io.md) | 05 — I/O and the `fsh` module |
-| [features/06-generics.md](features/06-generics.md) | 06 — generics and future traits |
+| [features/06-generics.md](features/06-generics.md) | 06 — generics, traits, const generics |
 | [features/07-modules-ffi.md](features/07-modules-ffi.md) | 07 — modules and FFI |
 | [features/08-numeric-semantics.md](features/08-numeric-semantics.md) | 08 — numeric semantics |
 | [features/09-diagnostics.md](features/09-diagnostics.md) | 09 — diagnostics and future analysis passes |
@@ -58,5 +59,8 @@ taxonomy is [subsets.md](subsets.md).
    the normative text, the entry's status flips to `normative` and the
    identifier's version becomes the shipping version.
 
-Roadmap entries (fsht-02/03 targets) are accepted designs tracked this
-way — the spec itself only ever describes shipped behaviour.
+Roadmap entries (the fsht-04 items and the fsht-03:04 compiler-capability
+proposals) are accepted/proposed designs tracked this way — the spec
+itself only ever describes shipped behaviour. The fsht-03 roadmap was
+fully ratified on 2026-11-19 (fsht-03:01–03:03, chapters 23–25): the
+next accepted designs will carry fsht-04 target versions.

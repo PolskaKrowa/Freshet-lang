@@ -1,0 +1,10 @@
+// fsht-01:01 corpus — function attributes: @pure (checked effect-free),
+// @inline and @noinline.
+@pure fn sq(x: f64) -> f64 { return x * x; }
+@noinline fn scale(v: f64, k: f64) -> f64 { return v * k; }
+@inline fn twice(x: i64) -> i64 { return x + x; }
+fn main() {
+    print_f64(sq(3.0), 1); println();           // 9.0
+    print_f64(scale(2.5, 4.0), 1); println();   // 10.0
+    print_i64(twice(21)); println();           // 42
+}

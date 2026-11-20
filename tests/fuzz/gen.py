@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""Freshet differential fuzz generator (fsht-01:01).
+"""Freshet differential fuzz generator (fsht-03:03).
 
 Generates random, deterministic-output Freshet programs from shapes that
-are valid per the fsht-01:01 standard (each shape mirrors a construct
-exercised by the curated corpus). The programs print only computed values,
-so their stdout is a differential oracle: any two builds of the same
-program (any optimisation level, any pass configuration, any thread count)
-must produce byte-identical output.
+are valid per the fsht-03:03 standard (each shape mirrors a construct
+exercised by the curated corpus — including the fsht-02 additions:
+`Vec<T>` containers with scope-exit drops, user traits with static
+dispatch, and const-generic instantiation with `const fn` evaluation;
+and the fsht-03 additions: numeric text parsing round-trips,
+checked/saturating/wrapping variant arithmetic, and mutable-borrow
+fill patterns).
+The programs print only computed values, so their stdout is a differential
+oracle: any two builds of the same program (any optimisation level, any
+pass configuration, any thread count) must produce byte-identical output.
 
 Integer reductions inside parfor are grouping-independent (exact
 arithmetic), and float accumulation uses exact dyadic constants, so even
@@ -210,11 +215,113 @@ class Gen:
         b = self.rng.randint(-5, 9)
         return ["    acc = acc + pick2(%d, %d);" % (a, b)]
 
+    # ------------- fsht-02 shapes -------------
+
+    def b_vec(self):
+        # Vec<T>: growth, borrowed Span view, scope-exit drop (ch. 20)
+        i = self.fresh()
+        c = self.rng.randint(1, 9)
+        trip = self.rng.choice([2, 3, 5, 9])
+        return [
+            "    let mut v%d: Vec<i64> = vec_new(i64, 2);" % i,
+            "    for (u%d in 0..%d) { vec_push(&v%d, u%d as i64 * %d); }" % (
+                i, trip, i, i, c),
+            "    let view%d: Span<i64> = v%d[0..v%d.len];" % (i, i, i),
+            "    for (j%d in 0..view%d.len) { acc = acc + view%d[j%d]; }" % (
+                i, i, i, i),
+        ]
+
+    def b_traits(self):
+        # trait + impl + generic caller: static dispatch per
+        # instantiation (ch. 21)
+        i = self.fresh()
+        a = self.rng.randint(1, 9)
+        k = self.rng.randint(1, 9)
+        self.decls.append(
+            "trait Bump%d {\n"
+            "    fn bump(x: Self) -> Self;\n"
+            "}\n"
+            "impl Bump%d for i64 {\n"
+            "    fn bump(x: Self) -> Self { return x * %d + %d; }\n"
+            "}\n"
+            "fn bump2<T: Bump%d>(x: T) -> T {\n"
+            "    return Bump%d::bump(Bump%d::bump(x));\n"
+            "}" % (i, i, k, a, i, i, i))
+        return ["    acc = acc + bump2(%d as i64);" % a]
+
+    def b_constgen(self):
+        # const generic struct instantiated through a const fn call in a
+        # const position; const_assert over the same evaluation (ch. 22)
+        i = self.fresh()
+        c = self.rng.randint(1, 4)
+        d = self.rng.randint(0, 5)
+        n = 4
+        length = n * c + d
+        elems = ", ".join(str((x % 9) + 1) for x in range(length))
+        self.decls.append("struct CG%d<T, const N: usize> { data: [T; N] }" % i)
+        self.decls.append(
+            "const fn cf%d(x: usize) -> usize { return x * %d + %d; }" % (
+                i, c, d))
+        return [
+            "    let g%d: CG%d<i64, cf%d(%d)> = CG%d { data: [%s] };" % (
+                i, i, i, n, i, elems),
+            "    acc = acc + g%d.data[0] + g%d.data[%d];" % (i, i, length - 1),
+            "    acc = acc + cf%d(%d) as i64;" % (i, n),
+            "    const_assert(cf%d(%d) == %d);" % (i, n, length),
+        ]
+
+    # ------------- fsht-03 shapes -------------
+
+    def b_parse(self):
+        # parse is fmt's inverse: the round trip is always Ok, and the
+        # payload feeds exact integer arithmetic (ch. 23 §1)
+        i = self.fresh()
+        v = self.rng.randint(-999, 999)
+        return [
+            "    let ps%d: String = fmt_i64(%d);" % (i, v),
+            "    match (parse_i64(str_of(&ps%d))) {" % i,
+            "        Ok(pv%d) => { acc = acc + pv%d; }" % (i, i),
+            "        Err(pe%d) => { acc = acc + 1; }" % i,
+            "    }",
+        ]
+
+    def b_checked(self):
+        # checked/saturating/wrapping variants over i8: every path is
+        # deterministic two's-complement arithmetic (ch. 23 §2)
+        i = self.fresh()
+        a = self.rng.randint(-120, 120)
+        b = self.rng.randint(-120, 120)
+        return [
+            "    let ca%d: i8 = %d as i8;" % (i, a),
+            "    let cb%d: i8 = %d as i8;" % (i, b),
+            "    match (checked_add(ca%d, cb%d)) {" % (i, i),
+            "        Some(x%d) => { acc = acc + (x%d as i64); }" % (i, i),
+            "        None => { acc = acc + (int_max(ca%d) as i64); }" % i,
+            "    }",
+            "    acc = acc + (saturating_add(ca%d, cb%d) as i64);" % (i, i),
+            "    acc = acc + (wrapping_mul(ca%d, cb%d) as i64);" % (i, i),
+        ]
+
+    def b_borrow(self):
+        # mutable borrow of array storage, written through indexing and
+        # read back through the owner (ch. 24 §1/§2)
+        i = self.fresh()
+        c = self.rng.randint(1, 9)
+        k = self.rng.randint(1, 9)
+        return [
+            "    let mut bx%d: [i64; 2] = [0, 0];" % i,
+            "    let bp%d: *i64 = &mut bx%d[0];" % (i, i),
+            "    bp%d[0] = %d;" % (i, c),
+            "    bp%d[1] = bp%d[0] * %d;" % (i, i, k),
+            "    acc = acc + bx%d[1];" % i,
+        ]
+
 
 BLOCKS = [Gen.b_plain, Gen.b_peel, Gen.b_call, Gen.b_cast, Gen.b_nested,
           Gen.b_while, Gen.b_array, Gen.b_span, Gen.b_enum, Gen.b_struct,
           Gen.b_malloc, Gen.b_parfor, Gen.b_fchain, Gen.b_fcall, Gen.b_str,
-          Gen.b_pick2]
+          Gen.b_pick2, Gen.b_vec, Gen.b_traits, Gen.b_constgen,
+          Gen.b_parse, Gen.b_checked, Gen.b_borrow]
 
 
 def gen_program(rng, budget=12, seed_label=""):
@@ -233,7 +340,7 @@ def gen_program(rng, budget=12, seed_label=""):
              "    print_f64(facc, 6); println();"]
     out = []
     if seed_label:
-        out.append("// fuzz seed %s (fsht-01:01 shapes; deterministic output)"
+        out.append("// fuzz seed %s (fsht-03:03 shapes; deterministic output)"
                    % seed_label)
     out.extend(helpers)
     out.extend(g.decls)

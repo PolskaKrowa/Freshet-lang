@@ -19,20 +19,27 @@ function_decl ::= [ attribute { attribute } ]
                   [ "->" type ] block
 attribute    ::= "@" identifier [ "(" args ")" ]
 params       ::= param { "," param }
-param        ::= [ "owned" | "borrowed" ] identifier ":" type
+param        ::= [ "owned" | "borrowed" [ "mut" ] ] identifier ":" type
 ```
+
+(`borrowed mut` was added by fsht-03:02 — [chapter 24 §1](24-borrows-lifetimes.md).)
 
 `fn main()` is the entry point; it returns `i32` to the C ABI and an
 implicit `return 0` is appended. Every other non-void function MUST
 return a value on every path (`F0209`; `while (true)` counts as
 non-terminating). `export fn` keeps its exact C symbol (external linkage).
 
-### Parameter ownership modes (fsht-01:01-03.02.01)
+### Parameter ownership modes (fsht-01:01-03.02.01; `borrowed mut`
+added in fsht-03:02)
 
 * `owned data: *T` — ownership transfers IN: every caller MUST pass
   `give(...)` (`F0303` otherwise); the callee may `free` it.
 * `borrowed s: Span<T>` — read-only view: no `free`, no `give`, no writes
   through the parameter; callers may not give it away either.
+* `borrowed mut p: *T` (or an aggregate) — exclusive mutable view since
+  fsht-03:02: the callee may write through it; the call site MUST pass
+  a mutable borrow (`F0303` otherwise); while it runs, no other borrow
+  of that storage may be live (chapter 24).
 * unannotated — the default contract of chapter 06 applies.
 
 ### Function attributes — language-level contracts (fsht-01:01-01.03.*)

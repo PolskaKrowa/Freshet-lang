@@ -1,4 +1,4 @@
-# 10 — toolchain & target features (fsht-01:01)
+# 10 — toolchain & target features (fsht-03:03)
 
 ### fsht-01:01-10.01.01 — the LLVM backend matrix
 
@@ -44,10 +44,23 @@ History:
 - fsht-03:03 (planned) — target-aware runtime architecture
   (fsht-03:03-10.03.02) resolves this entry's limitation; this entry
   will carry the update reference.
+- fsht-03:03 (ratified 2026-11-19) — the limitation is resolved: the
+  `--target` triple now reaches the runtime's own compilation (same-
+  target runtime, triple in the runtime cache key), the runtime
+  decomposes into `common/` + `platforms/{linux,windows,wasm,
+  baremetal}` with POSIX/pthreads confined to the linux layer, and
+  the link line requests `-lpthread` only for linux targets. See
+  [ch. 25](../../spec/25-portable-runtime.md) and 10.03.02 below.
 
 ### fsht-03:03-10.03.02 — portable, target-aware runtime
 
-Status: accepted (target fsht-03:03). Spec: —
+Status: normative (fsht-03:03). Spec:
+[spec/25-portable-runtime.md](../../spec/25-portable-runtime.md).
+Reference implementation: Penstock 0.1.0-INDEV (conformance: the
+target-matrix workflow `.github/workflows/targets.yml` — the portable
+corpus and a runtime smoke per ratified target; corpus
+`tests/corpus/22_portable_program.fsht` is the pinned portable
+exhibit with one golden output on all five targets).
 
 ```
 runtime/
@@ -60,9 +73,30 @@ Target set: Linux x86-64, Linux AArch64, Windows x86-64, WebAssembly
 WASI, WebAssembly standalone/browser. Every target configuration MUST
 have suitable runtime tests before support is declared.
 
+**Ratified surface (fsht-03:03):** the decomposition above is
+normative (target-independent core + named platform layers);
+same-target runtime compilation including the triple in the runtime
+cache key; platform-conditional links; the target matrix with its
+`parfor` semantics (full worker pool on linux/windows, serialised on
+wasm — `@reproducible` output unchanged by construction); the `FRT_*`
+portable-acquisition rules (unset/unparsable → documented default,
+silently, on every target; embedder globals on standalone wasm;
+compile-time defaults on baremetal; `FRT_TIMING`/`FRT_PROF_OUT` no-op
+where no filesystem exists); the portable-program contract; and the
+tested-before-declared gate — a target without a green runtime-test
+row is not supported whatever the compiler accepts. Ratification
+recorded the matrix green: Linux x86-64 (native runner), Linux AArch64
+(native runner), Windows x86-64 (windows runner), WASI (wasmtime),
+standalone wasm (d8/node embedding).
+
 History:
 - fsht-03:03 (accepted) — first accepted with the tested-before-declared
   requirement.
+- fsht-03:03 (ratified 2026-11-19) — chapter 25 normative; the
+  fsht-01:01-10.03.01 limitation is closed (update reference above).
+  Shared-memory wasm threads, ratified baremetal targets, dynamic
+  wasm library targets and per-target vectorisation cost models are
+  deferrals (ch. 25 §7).
 
 ### fsht-01:01-10.04.01 — tooling
 

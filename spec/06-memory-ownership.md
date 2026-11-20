@@ -32,11 +32,15 @@ Moved**. The following are compile-time errors under `F0301`:
 
 Suspicious-but-unprovable ownership operations are `F0302` warnings.
 
-`String` allocations are a **documented fsht-01:01 gap**: the ownership
-state machine does not yet track them (chapter 10) — `string_free` must
-be called explicitly or via `defer`. Container types joining the checked
-ownership model is the headline update target of fsht-02:01 (registry
-entry `fsht-02:01-02.09.01`).
+`String` allocations were a **documented gap** through fsht-02:03 — the
+ownership state machine did not track them. The fsht-03:02 update
+([chapter 24 §4](24-borrows-lifetimes.md)) closed the gap: `String` is
+ownership-tracked (auto-drop, move invalidation, pre-emptive
+`string_free`), and `str_of(&s)` views live under the borrow
+discipline (registry `fsht-03:02-03.02.09`/`03.02.10`). Containers
+joined the checked model earlier, in fsht-02:01 (`Vec<T>`,
+[chapter 20](20-dynamic-collections.md), registry
+`fsht-02:01-02.09.01`).
 
 ## Borrowing: `owned` and `borrowed` parameters
 
@@ -45,7 +49,10 @@ declaration says *why* (chapter 03): `owned` moves ownership IN (callee
 may free; every caller must `give` — `F0303`); `borrowed` is a read-only
 view (no free, no give, no writes through it, on either side). This is
 the fsht-01:01 answer to borrow checking: explicit, signature-carried,
-checked at every call site.
+checked at every call site. Since fsht-03:02 the model is matured by
+general `&`/`&mut` borrow expressions with exclusivity checking and
+the `borrowed mut` mode — [chapter 24](24-borrows-lifetimes.md) —
+without redesigning this surface.
 
 ## `unsafe` scopes
 

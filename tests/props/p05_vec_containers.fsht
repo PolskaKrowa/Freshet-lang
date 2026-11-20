@@ -1,0 +1,85 @@
+// property: container invariants hold at runtime — len tracks every
+// mutation, Option access is exact, Span views alias without copying,
+// clone is independent of its source, and the scope-exit drops free
+// every owned buffer exactly once (a double drop would crash the run).
+// Prints ALL OK when every check passes; the runner also compares the
+// output across -O0 / -O3 / --no-loop-opts builds.
+fn sum_view(values: Span<i64>) -> i64 {
+    let mut total: i64 = 0;
+    for (i in 0..values.len) { total = total + values[i]; }
+    return total;
+}
+fn main() {
+    let mut ok: i64 = 0;
+
+    // construction: capacity 0 means the first push allocates
+    let mut v: Vec<i64> = vec_new(i64);
+    if (v.len == 0) { ok = ok + 1; }
+    if (vec_is_empty(v)) { ok = ok + 1; }
+
+    // growth: len tracks every push
+    for (i in 0..10) { vec_push(&v, i as i64 * i as i64); }
+    if (v.len == 10) { ok = ok + 1; }
+    if (vec_capacity(v) >= v.len) { ok = ok + 1; }
+
+    // Option access is exact: v = [0,1,4,9,16,25,36,49,64,81]
+    match (vec_get(v, 3)) {
+        Some(x) => { if (x == 9) { ok = ok + 1; } }
+        None => { ok = ok - 1; }
+    }
+    match (vec_pop(&v)) {
+        Some(x) => { if (x == 81) { ok = ok + 1; } }
+        None => { ok = ok - 1; }
+    }
+    if (v.len == 9) { ok = ok + 1; }
+
+    // a pop from an empty container is None
+    let mut e: Vec<i64> = vec_new(i64, 1);
+    match (vec_pop(&e)) {
+        Some(x) => { ok = ok - 1; }
+        None => { ok = ok + 1; }
+    }
+
+    // insert / remove / resize / truncate keep positions and len exact
+    let mut u: Vec<i64> = vec_new(i64, 1);
+    vec_push(&u, 1);
+    vec_push(&u, 3);
+    vec_insert(&u, 1, 2);                 // [1, 2, 3]
+    if (u[0] + u[1] + u[2] == 6) { ok = ok + 1; }
+    match (vec_remove(&u, 1)) {
+        Some(x) => { if (x == 2) { ok = ok + 1; } }
+        None => { ok = ok - 1; }
+    }
+    if (u.len == 2) { ok = ok + 1; }
+    vec_resize(&u, 4, 9);                  // [1, 3, 9, 9]
+    if (u.len == 4) { ok = ok + 1; }
+    if (u[2] == 9) { ok = ok + 1; }
+    vec_truncate(&u, 2);                   // [1, 3]
+    if (u.len == 2) { ok = ok + 1; }
+
+    // borrowed views alias without copying (v = [0,1,4,9,16,25,36,49,64])
+    let view: Span<i64> = v[2..7];         // [4, 9, 16, 25, 36]
+    if (view.len == 5) { ok = ok + 1; }
+    if (view[0] == 4 && view[4] == 36) { ok = ok + 1; }
+    if (v[8] == 64) { ok = ok + 1; }
+    if (sum_view(v[0..v.len]) == 204) { ok = ok + 1; }
+
+    // clone is an owned deep copy: mutating it leaves the source intact
+    let mut c: Vec<i64> = vec_clone(v);
+    if (c.len == v.len) { ok = ok + 1; }
+    vec_push(&c, 100);
+    if (c.len == v.len + 1) { ok = ok + 1; }
+    vec_clear(&c);
+    if (c.len == 0) { ok = ok + 1; }
+    if (vec_is_empty(c)) { ok = ok + 1; }
+
+    // from_array adopts the array contents
+    let src: [i64; 3] = [7, 8, 9];
+    let f: Vec<i64> = vec_from_array(src);
+    if (f.len == 3) { ok = ok + 1; }
+    if (f[2] == 9) { ok = ok + 1; }
+
+    // every binding above drops exactly once at scope exit
+    if (ok == 23) { print("ALL OK"); } else { print("FAILED"); }
+    println();
+}

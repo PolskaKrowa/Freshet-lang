@@ -1,0 +1,57 @@
+// property: static dispatch through monomorphisation selects the right
+// impl at every instantiation — one generic body over two
+// representations must produce each representation's arithmetic, and
+// `+`-composed bounds resolve through the same type parameter. Prints
+// ALL OK when every check passes; the runner also compares the output
+// across -O0 / -O3 / --no-loop-opts builds (the call is resolved at
+// compile time; no vtable may perturb it).
+trait Numeric {
+    fn zero() -> Self;
+    fn one() -> Self;
+    fn add(a: Self, b: Self) -> Self;
+    fn mul(a: Self, b: Self) -> Self;
+}
+impl Numeric for i64 {
+    fn zero() -> Self { return 0; }
+    fn one() -> Self { return 1; }
+    fn add(a: Self, b: Self) -> Self { return a + b; }
+    fn mul(a: Self, b: Self) -> Self { return a * b; }
+}
+impl Numeric for f64 {
+    fn zero() -> Self { return 0.0; }
+    fn one() -> Self { return 1.0; }
+    fn add(a: Self, b: Self) -> Self { return a + b; }
+    fn mul(a: Self, b: Self) -> Self { return a * b; }
+}
+trait Scalable {
+    fn scale(x: Self, k: Self) -> Self;
+}
+impl Scalable for i64 {
+    fn scale(x: Self, k: Self) -> Self { return x * k; }
+}
+impl Scalable for f64 {
+    fn scale(x: Self, k: Self) -> Self { return x * k; }
+}
+
+// one generic body, resolved per instantiation
+fn dot<T: Numeric>(a: T, b: T) -> T {
+    return Numeric::mul(a, b);
+}
+// both traits' methods resolve through the same tparam
+fn scale_then_add<T: Numeric + Scalable>(a: T, k: T) -> T {
+    return Numeric::add(Scalable::scale(a, k), a);
+}
+fn main() {
+    let mut ok: i64 = 0;
+    // i64 instantiation of the generic body
+    if (dot(2 as i64, 5 as i64) == 10) { ok = ok + 1; }
+    if (dot(3 as i64, 5 as i64) == 15) { ok = ok + 1; }
+    // f64 instantiation of the SAME body (exact dyadic values only)
+    if (dot(2.5, 4.0) == 10.0) { ok = ok + 1; }
+    if (dot(1.5, 2.0) == 3.0) { ok = ok + 1; }
+    // `+`-composed bounds
+    if (scale_then_add(3 as i64, 2 as i64) == 9) { ok = ok + 1; }
+    if (scale_then_add(1.5, 4.0) == 7.5) { ok = ok + 1; }
+    if (ok == 6) { print("ALL OK"); } else { print("FAILED"); }
+    println();
+}

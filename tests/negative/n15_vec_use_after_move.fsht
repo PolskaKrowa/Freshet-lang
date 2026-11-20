@@ -1,0 +1,9 @@
+// fsht-02:01 — must be rejected: a by-value container transfer
+// (let-move) invalidates the source binding; using it afterwards is a
+// use-after-move.
+fn main() {
+    let mut a: Vec<i64> = vec_new(i64, 2);
+    vec_push(&a, 7);
+    let b: Vec<i64> = a;          // moves the container
+    print_i64(a[0]); println();   // rejected: use-after-move
+}

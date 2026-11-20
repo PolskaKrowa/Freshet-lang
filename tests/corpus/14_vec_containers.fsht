@@ -1,0 +1,83 @@
+// fsht-02:01 corpus — dynamic collections (Vec<T>): construction,
+// growth, checked indexing, Option access, borrowed Span views, POD
+// struct elements, and the ownership model (moves, scope-exit drops).
+fn sum_view(values: Span<i64>) -> i64 {
+    let mut total: i64 = 0;
+    for (i in 0..values.len) { total = total + values[i]; }
+    return total;
+}
+fn take_by_value(v: Vec<f64>) -> f64 {
+    // by-value container parameters are moves: the callee owns the
+    // buffer and drops it at exit
+    let mut total: f64 = 0.0;
+    for (i in 0..v.len) { total = total + v[i]; }
+    return total;
+}
+struct Pt { x: f64, y: f64 }
+fn main() {
+    // growth + len/capacity + indexing
+    let mut v: Vec<i64> = vec_new(i64, 4);
+    for (i in 0..10) { vec_push(&v, i as i64 * i as i64); }
+    print_i64(v.len); print(" "); print_i64(vec_capacity(v)); println();
+    let mut s: i64 = 0;
+    for (i in 0..v.len) { s = s + v[i]; }
+    print_i64(s); println();
+
+    // Option access: Some / None
+    let top: Option<i64> = vec_pop(&v);
+    match (top) {
+        Some(x) => { print_i64(x); println(); }
+        None => { print("none"); println(); }
+    }
+    let mut empty: Vec<i64> = vec_new(i64);
+    match (vec_pop(&empty)) {
+        Some(x) => { print_i64(x); println(); }
+        None => { print("none"); println(); }
+    }
+
+    // borrowed views: no copy, len travels with the view
+    let view: Span<i64> = v[2..6];
+    print_i64(view.len); print(" ");
+    print_i64(view[0]); print(" "); print_i64(view[3]); println();
+    print_i64(sum_view(v[0..v.len])); println();
+
+    // POD struct elements (memcpy semantics)
+    let mut pts: Vec<Pt> = vec_new(Pt, 2);
+    vec_push(&pts, Pt { x: 1.5, y: 2.5 });
+    vec_push(&pts, Pt { x: 3.5, y: 4.5 });
+    print_f64(pts[1].x + pts[0].y, 1); println();
+    pts[0].x = 10.25;
+    print_f64(pts[0].x, 2); println();
+
+    // moves: let-move + by-value call + manual free pre-empting the drop
+    let mut a: Vec<f64> = vec_new(f64, 2);
+    vec_push(&a, 1.5);
+    vec_push(&a, 2.25);
+    print_f64(take_by_value(a), 2); println();   // 3.75 (a moved in)
+    let mut b: Vec<i64> = vec_new(i64, 1);
+    vec_push(&b, 7);
+    vec_free(&b);                                // manual release
+
+    // insert / remove / resize / truncate / clear / clone / from_array
+    let mut u: Vec<i64> = vec_new(i64, 1);
+    vec_push(&u, 1);
+    vec_push(&u, 3);
+    vec_insert(&u, 1, 2);
+    print_i64(u[0] + u[1] + u[2]); println();    // 6
+    match (vec_remove(&u, 1)) {
+        Some(x) => { print_i64(x); println(); } // 2
+        None => { print("none"); println(); }
+    }
+    vec_resize(&u, 4, 9);
+    print_i64(u[3]); print(" "); print_i64(u.len); println();
+    vec_truncate(&u, 2);
+    print_i64(u.len); println();
+    let src: [i64; 3] = [4, 5, 6];
+    let c: Vec<i64> = vec_from_array(src);
+    let mut d: Vec<i64> = vec_clone(c);
+    vec_push(&d, 70);
+    print_i64(c.len); print(" "); print_i64(d.len); println();
+    vec_clear(&d);
+    print_i64(d.len); println();
+    // every remaining binding drops at scope exit — no leak, one free each
+}

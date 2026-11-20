@@ -1,0 +1,12 @@
+// fsht-03:01: mixed operand widths to a checked variant — F0201. The
+// variant family is precision-explicit: both operands MUST share the
+// identical integer type (no mixed-width promotion; callers convert
+// explicitly).
+fn main() {
+    let a: i32 = 1;
+    let b: i64 = 2;
+    match (checked_add(a, b)) {
+        Some(v) => { print_i64(v as i64); println(); }
+        None => { print("none"); println(); }
+    }
+}

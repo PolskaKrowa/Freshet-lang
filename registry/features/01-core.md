@@ -1,4 +1,4 @@
-# 01 — core language features (fsht-01:01)
+# 01 — core language features (fsht-03:03)
 
 ### fsht-01:01-01.01.01 — lexical structure
 

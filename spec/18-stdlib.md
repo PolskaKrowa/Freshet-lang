@@ -23,18 +23,21 @@ pub fn assert_eq_f64(got: f64, want: f64, what: str) -> i64
 * The C-level `libfsh` (include/fsh/*.h, libfsh.a) remains available
   through `extern fn` + `#link fsh` for everything not wrapped here.
 
-## Known gaps (honest fsht-01:01 surface)
+## Known gaps — closed by fsht-03:01
 
-* **No numeric text parsing**: `fmt_i64`/`fmt_f64` exist; `parse_i64` /
-  `parse_f64` do not (registry `fsht-03:01-05.04.01`).
-* **No streaming I/O**: `file_read` reads whole files; buffered
-  readers/writers for multi-gigabyte datasets are part of the fsht-03:01
-  standard-library update, together with `Result<T, E>` integration so
-  I/O failures propagate instead of surfacing as ambiguous empty values.
-* **No generic containers**: `String` is the only growable buffer
-  (chapter 10). The planned module decomposition for fsht-03:01 —
-  `core / alloc / collections / string / math / io / numeric / time /
-  bits / random` — is tracked in the registry, not here.
+The fsht-01:01 surface was deliberately minimal; every gap below is
+closed by the fsht-03:01 standard-library update
+([chapter 23](23-stdlib-expansion.md), registry
+`fsht-03:01-05.04.01`/`05.05.01`/`05.06.01`), which is additive — this
+chapter's own surface is unchanged:
+
+* **Numeric text parsing** — `parse_i64`/`parse_u64`/`parse_f64` with
+  `Result` + `ParseError` (ch. 23 §1).
+* **Streaming I/O** — buffered `Reader`/`Writer` over `IoError`
+  `Result`s (ch. 23 §4); `file_read` keeps its whole-file contract.
+* **Library decomposition** — the `core / alloc / collections /
+  string / math / io / numeric / time / bits / random` modules (ch. 23
+  §5); `fsh` remains the thin façade with this exact surface.
 
 ## Conformance requirements
 

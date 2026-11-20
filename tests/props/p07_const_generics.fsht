@@ -1,0 +1,48 @@
+// property: const-generic instantiation is compile-time exact —
+// distinct N are distinct types with distinct layouts, a const fn call
+// in a const position folds to the same value the runtime call
+// computes, and const_assert holds. Prints ALL OK when every check
+// passes; the runner also compares the output across
+// -O0 / -O3 / --no-loop-opts builds.
+struct Vector<T, const N: usize> { data: [T; N] }
+
+const fn square(x: usize) -> usize {
+    return x * x;
+}
+const fn add3(x: usize) -> usize {
+    return x + 3;
+}
+
+// const N is inferred from array-typed arguments; N folds to a literal
+// inside the instance body
+fn sum<T, const N: usize>(v: [T; N]) -> T {
+    let mut s: T = 0 as T;
+    for (i in 0..N) { s = s + v[i]; }
+    return s;
+}
+fn main() {
+    let mut ok: i64 = 0;
+    // distinct N are distinct types: the layouts differ
+    if (sizeof(Vector<f64, 3>) as i64 == 24) { ok = ok + 1; }
+    if (sizeof(Vector<f64, 4>) as i64 == 32) { ok = ok + 1; }
+    // const fn call in a const position: square(4) = 16 elements
+    if (sizeof(Vector<f64, square(4)>) as i64 == 128) { ok = ok + 1; }
+    // const-parameter arithmetic: 2 * square(2) = 8 elements
+    if (sizeof(Vector<f64, 2 * square(2)>) as i64 == 64) { ok = ok + 1; }
+    // the same const fns compute identical values at runtime
+    let rt: usize = square(4);
+    if (rt == 16) { ok = ok + 1; }
+    let rt3: usize = add3(4);
+    if (rt3 == 7) { ok = ok + 1; }
+    // const N inferred from array-typed call arguments
+    let a4: [i64; 4] = [1, 2, 3, 4];
+    if (sum(a4) == 10) { ok = ok + 1; }
+    let a3: [f64; 3] = [1.5, 2.5, 3.5];
+    if (sum(a3) == 7.5) { ok = ok + 1; }
+    // compile-time assertions over const fn results
+    const_assert(square(4) == 16);
+    const_assert(add3(4) == 7);
+    const_assert(sizeof(Vector<f64, 3>) == 24);
+    if (ok == 8) { print("ALL OK"); } else { print("FAILED"); }
+    println();
+}

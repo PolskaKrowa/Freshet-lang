@@ -1,4 +1,9 @@
-# Freshet-lang benchmark suite (fsht-01:01)
+# Freshet-lang benchmark suite (fsht-03:03)
+
+> Version note: the 12 kernels exercise the fsht-01:01 feature surface,
+> which remains valid under fsht-03:03. Kernels using `Vec<T>`, traits or
+> const generics are a fsht-03 planning item — the kernel set is
+> normative in [KERNELS.md](KERNELS.md) and changes only through it.
 
 Twelve HPC kernels, each implemented four times — **Freshet**,
 **idiomatic C++** (the clean first-draft version), **hand-tuned C++**

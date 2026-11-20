@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Freshet-lang conformance & stress suite (fsht-01:01).
+# Freshet-lang conformance & stress suite (fsht-03:03).
 #
 #   tests/run_suite.sh [extra penstock flags]
 #
@@ -45,7 +45,7 @@ run_compile() {  # -> rc in $?
   "$FSHC" $EXTRA_FLAGS "$1" -o "$TMP/t" 2>"$TMP/err"
 }
 
-echo "== Freshet-lang conformance suite (fsht-01:01) =="
+echo "== Freshet-lang conformance suite (fsht-03:03) =="
 echo "   compiler: $FSHC ${EXTRA_FLAGS:+(extra: $EXTRA_FLAGS)}"
 echo
 
@@ -76,6 +76,10 @@ done
 
 echo "-- properties (identical output across build configurations)"
 run_cfg() {  # $1 name, $2.. flags; runs program under each; outputs compared
+  # (fsht-02:03 session fix: the historical comparison counted the empty
+  # leading element of the '#'joined list as a distinct "output", so every
+  # property reported "configurations disagree" even when all builds
+  # printed identical text — compare non-empty unique lines instead.)
   local name=$1; shift
   local outs=""
   for cfg in "$@"; do
@@ -86,16 +90,21 @@ run_cfg() {  # $1 name, $2.. flags; runs program under each; outputs compared
     outs="$outs#$( "$TMP/p_$name" 2>/dev/null )"
   done
   if [ "${#outs}" -eq 0 ]; then bad "props/$name (no successful build)"; return; fi
-  if [ "$(echo "$outs" | tr '#' '\n' | sort -u | wc -l)" -le 1 ]; then
+  if [ "$(echo "$outs" | tr '#' '\n' | grep -v '^$' | sort -u | wc -l)" -le 1 ]; then
     ok "props/$name (configs agree)"
   else
     bad "props/$name (configurations disagree)"
-    echo "$outs" | tr '#' '\n' | sort -u | sed -n '1,6p'
+    echo "$outs" | tr '#' '\n' | grep -v '^$' | sort -u | sed -n '1,6p'
   fi
 }
 run_cfg p02_int_semantics    "-O0" "-O3" "-O3 --no-loop-opts"
 run_cfg p03_span_str_rules   "-O0" "-O3" "-O3 --no-loop-opts"
 run_cfg p04_fp_strict_default "-O0" "-O3" "-O3 --no-loop-opts"
+run_cfg p05_vec_containers   "-O0" "-O3" "-O3 --no-loop-opts"
+run_cfg p06_traits_dispatch  "-O0" "-O3" "-O3 --no-loop-opts"
+run_cfg p07_const_generics   "-O0" "-O3" "-O3 --no-loop-opts"
+run_cfg p08_stdlib_numeric  "-O0" "-O3" "-O3 --no-loop-opts"
+run_cfg p09_borrow_exclusivity "-O0" "-O3" "-O3 --no-loop-opts"
 # p01: @reproducible must be bit-identical across worker counts
 outs=""
 for t in 1 2 4 8; do
@@ -103,11 +112,11 @@ for t in 1 2 4 8; do
     outs="$outs#$(FRT_THREADS=$t "$TMP/p1_$t" 2>/dev/null)"
   fi
 done
-if [ -n "$outs" ] && [ "$(echo "$outs" | tr '#' '\n' | sort -u | wc -l)" -le 1 ]; then
+if [ -n "$outs" ] && [ "$(echo "$outs" | tr '#' '\n' | grep -v '^$' | sort -u | wc -l)" -le 1 ]; then
   ok "props/p01_reproducible_threads (FRT_THREADS 1/2/4/8 bit-identical)"
 else
   bad "props/p01_reproducible_threads (output depends on thread count)"
-  echo "$outs" | tr '#' '\n' | sort -u | sed -n '1,6p'
+  echo "$outs" | tr '#' '\n' | grep -v '^$' | sort -u | sed -n '1,6p'
 fi
 
 echo "-- differential fuzz (smoke: ${FUZZ_SEEDS:-32} seeds)"

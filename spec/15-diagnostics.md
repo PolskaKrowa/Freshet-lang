@@ -1,4 +1,4 @@
-# 15 — Diagnostics (normative in fsht-01:01)
+# 15 — Diagnostics (normative in fsht-01:01; F0310/F0311 added in fsht-03:02)
 
 ## Correctness vs performance (fsht-01:01-09.01.01)
 
@@ -12,6 +12,7 @@ the performance family to hard errors for the HPC workflow.
 |---|---|---|
 | type, cast, arity, mutability errors (`F0201`,`F0202`,`F0208`) | error | error |
 | ownership: leak / UAF / double free / bad give (`F0301`) | error | error |
+| borrow exclusivity / lifetime escape (`F0310`,`F0311`) (fsht-03:02) | error | error |
 | `F0212`, `F0204`, `F0209`, `F0203`, `F0303` | error | error |
 | division by the literal zero (`F0214`) | error | error |
 | int div by non-power-of-2 const (`F0401`) / runtime value (`F0402`) | warning | error |
@@ -87,6 +88,8 @@ rejection, and additionally the ID when the compiler is Penstock).
 | `F0307` | `thread` | unsafe construct inside a parfor body |
 | `F0308` | `red-add-init` | reduction(+) not initialised to 0 |
 | `F0309` | `red-mul-init` | reduction(*) not initialised to 1 |
+| `F0310` | `borrow-conflict` | two live mutable borrows of one place, or a growth/release/move against a live shared view (fsht-03:02) |
+| `F0311` | `borrow-escape` | a borrow or view outlives its storage (returning a view of a local, storing into an outliving root) (fsht-03:02) |
 
 **Performance**
 
@@ -138,4 +141,8 @@ The ID registry, the never-reuse/never-renumber rule and the severity
 policy table are MUST-level for the reference implementation and
 SHOULD-level for independent implementations. Several IDs still cover a
 family of related failures (`F0201`, `F0301`); splits create new IDs —
-that process is itself the rule.
+that process is itself the rule. The first ratified split happened at
+fsht-03:02: the `F0301` family's aliasing/lifetime edges became
+`F0310` (`borrow-conflict`) and `F0311` (`borrow-escape`) with the
+chapters 20/24 cross-references; `F0301` keeps leak/UAF/double-free/
+bad-give.

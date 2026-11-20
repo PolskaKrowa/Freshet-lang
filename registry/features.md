@@ -1,4 +1,4 @@
-# Feature index (fsht-01:01)
+# Feature index (fsht-03:03)
 
 Master table of every registry entry. Full entries (rules, histories,
 update references) live in the per-subset files.
@@ -73,27 +73,31 @@ update references) live in the per-subset files.
 | fsht-01:01-10.04.01 | tooling | [10](features/10-toolchain.md) |
 | fsht-01:01-10.04.02 | observability | [10](features/10-toolchain.md) |
 
-## In development (first cut in the reference compiler) — fsht-02:01
+## Normative in fsht-02:01–fsht-02:03 (ratified 2026-11-19)
 
-| identifier | title | target |
+| identifier | title | subset file |
 |---|---|---|
-| fsht-02:01-02.09.01 | dynamic collections (`Vec<T>` first cut; Slice/SliceMut naming open; ByteBuffer = `Vec<u8>`) | fsht-02:01 |
-| fsht-02:01-02.09.02 | container move semantics (drop on scope exit, move-out invalidation, manual release) | fsht-02:01 |
+| fsht-02:01-02.09.01 | dynamic collections (`Vec<T>`, views via `Span<T>` — no separate slice types; ByteBuffer = `Vec<u8>`) | [02](features/02-data-types.md) |
+| fsht-02:01-02.09.02 | container move semantics (drop on scope exit, move-out invalidation, manual release) | [02](features/02-data-types.md) |
+| fsht-02:02-06.02.01 | user-defined traits (`trait`/`impl`/`Self`, static dispatch through monomorphisation, `+` bounds; blanket impls and dynamic dispatch deferred) | [06](features/06-generics.md) |
+| fsht-02:03-06.03.01 | const generics + const fn (`const N: usize`, const expressions, `const_assert`; non-usize const params deferred) | [06](features/06-generics.md) |
 
-## Accepted (target versions) — the fsht-02/03 roadmap
+## Normative in fsht-03:01–fsht-03:03 (ratified 2026-11-19)
 
-| identifier | title | target |
+| identifier | title | subset file |
 |---|---|---|
-| fsht-02:02-06.02.01 | user-defined traits (static dispatch) | fsht-02:02 |
-| fsht-02:02-06.02.01 | user-defined traits (static dispatch) | fsht-02:02 |
-| fsht-02:03-06.03.01 | const generics + const fn | fsht-02:03 |
-| fsht-03:01-05.04.01 | numeric text parsing | fsht-03:01 |
-| fsht-03:01-05.05.01 | streaming I/O with Result integration | fsht-03:01 |
-| fsht-03:01-05.06.01 | standard-library decomposition | fsht-03:01 |
-| fsht-03:01-08.01.04 | checked/saturating/wrapping variants | fsht-03:01 |
-| fsht-03:02-03.02.09 | mutable borrowing with exclusivity | fsht-03:02 |
-| fsht-03:02-03.02.10 | lifetime/escape analysis refinement | fsht-03:02 |
-| fsht-03:03-10.03.02 | portable target-aware runtime | fsht-03:03 |
+| fsht-03:01-05.04.01 | numeric text parsing (`parse_i64/u64/f64` over `Result<T, ParseError>`, round-trip law) | [05](features/05-io.md) |
+| fsht-03:01-05.05.01 | streaming I/O with Result integration (`Reader`/`Writer`, `IoError`, ownership-tracked handles) | [05](features/05-io.md) |
+| fsht-03:01-05.06.01 | standard-library decomposition (`core/alloc/collections/string/math/io/numeric/time/bits/random`; `fsh` façade kept) | [05](features/05-io.md) |
+| fsht-03:01-08.01.04 | checked/saturating/wrapping variants + `checked_cast`/`saturating_cast` conversions | [08](features/08-numeric-semantics.md) |
+| fsht-03:02-03.02.09 | mutable borrowing with exclusivity (`&mut`/`&` places, `borrowed mut`, `F0310`) | [03](features/03-memory.md) |
+| fsht-03:02-03.02.10 | lifetime/escape analysis refinement (`F0311`, String migration, drop elaboration, `usize` resolved 64-bit) | [03](features/03-memory.md) |
+| fsht-03:03-10.03.02 | portable target-aware runtime (`runtime/common + platforms`, five-target matrix, tested-before-declared) | [10](features/10-toolchain.md) |
+
+## Accepted (target versions)
+
+Empty as of fsht-03:03 — the seven fsht-03 roadmap entries above were
+ratified on 2026-11-19; the next accepted designs will target fsht-04.
 
 ## Proposed (not scheduled)
 
@@ -115,5 +119,8 @@ only).
 
 ## Count
 
-64 normative entries, 11 accepted, 11 proposed, 5 deferred/rejected —
-the complete fsht-01:01 ledger.
+76 normative entries (65 from fsht-01:01, 4 ratified through
+fsht-02:03, 7 ratified through fsht-03:03), 0 in development, 0
+accepted, 11 proposed, 4 deferred/rejected — 91 permanent entries in
+total: the complete fsht-03:03 ledger; the roadmap column now points
+at fsht-04 and the fsht-03:04 compiler-capability proposals.

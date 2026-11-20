@@ -1,0 +1,8 @@
+// fsht-02:01 — must be rejected: rebinding a container that still
+// owns its allocation leaks the old buffer.
+fn main() {
+    let mut v: Vec<i64> = vec_new(i64, 2);
+    vec_push(&v, 7);
+    let w: Vec<i64> = vec_new(i64, 1);
+    v = w;   // rejected: v still owns
+}

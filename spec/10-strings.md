@@ -42,21 +42,28 @@ more)`, `str_cat(a, b)`, `str_of(&s)`, `string_free(&s)`,
 `str_eq(a, b)`, `str_to_cstr(s)` (NUL-terminated copy; caller frees),
 `fmt_i64(x) -> String`, `fmt_f64(x, digits) -> String`.
 
-`String` is `{ data: *u8, len, cap }`. **The ownership state machine does
-not track String allocations in fsht-01:01** — they must be freed
-explicitly or via `defer` (chapter 06). General dynamic containers and
-bringing `String` under the ownership checker are the fsht-02:01 update
-(registry `fsht-02:01-02.09.*`).
+`String` is `{ data: *u8, len, cap }`. Since fsht-03:02 the ownership
+state machine tracks `String` ([chapter 24 §4](24-borrows-lifetimes.md)):
+scope-exit drops, move-out invalidation and the pre-emptive
+`string_free` — the fsht-01:01 manual-free caveat is closed. Dynamic
+containers joined the checked model in fsht-02:01 (`Vec<T>`,
+[chapter 20](20-dynamic-collections.md), registry `fsht-02:01-02.09.*`).
+Numeric text parsing (`parse_i64`/`parse_u64`/`parse_f64`) landed in
+fsht-03:01 ([chapter 23](23-stdlib-expansion.md), registry
+`fsht-03:01-05.04.01`).
 
-`String` is the *only* growable buffer type in fsht-01:01; numeric text
-parsing (`parse_i64`/`parse_f64`) does not exist yet either — both facts
-are honest limitations recorded in the registry with their update
-targets.
+`String` was the *only* growable buffer type in fsht-01:01 — `Vec<T>`
+joined in fsht-02:01 (chapter 20) and the ownership-tracking gap closed
+in fsht-03:02 (chapter 24). Numeric text parsing existed in no version
+before fsht-03:01 — both facts are recorded in the registry with their
+update references.
 
 ## Conformance requirements
 
 Byte-based indexing, `(ptr, len)` view semantics, slicing-as-view,
-literal-as-value, the `String` builtin surface and its manual-free
-caveat are MUST-level (the caveat included — an implementation that
-silently GCs Strings would be non-conforming until the fsht-02:01 update
-ratifies tracked containers).
+literal-as-value, and the `String` builtin surface are MUST-level.
+Since fsht-03:02 the ownership-tracked `String` lifecycle of chapter 24
+(auto-drop, moves, pre-emptive `string_free`, the `str_of` borrow
+discipline) is MUST-level too — an implementation that leaves `String`
+untracked is non-conforming to fsht-03:02+ (it conformed to fsht-02:03
+and earlier, which is the intended per-version gating).

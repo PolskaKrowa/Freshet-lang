@@ -25,7 +25,7 @@ Layer 2 - Scientific standard library (layer 2 is NOT part of this standard)
     linear algebra, numerics, statistics, physics primitives, datasets
         |
         v
-Layer 1 - Freshet language and runtime  <-- THIS DOCUMENT (fsht-01:01)
+Layer 1 - Freshet language and runtime  <-- THIS DOCUMENT (fsht-03:03)
     types, generics, ownership, collections, memory, parallelism, I/O
         |
         v
@@ -36,9 +36,11 @@ Compilers (Penstock is the reference)
 A conforming implementation MUST keep Layer 1 independent of any
 scientific library: it MUST be possible to write a plain command-line
 program without importing a physics framework, and conversely a numerical
-library MUST be expressible without compiler changes. In fsht-01:01 the
-shipped library surface is deliberately minimal (`fsh`, chapter 18) and
-everything beyond it is out of scope of this standard.
+library MUST be expressible without compiler changes. As of fsht-03:01
+the shipped library is the decomposed module set of chapter 23
+(`core/alloc/collections/string/math/io/numeric/time/bits/random`, the
+`fsh` façade kept); everything beyond it is out of scope of this
+standard.
 
 ## Design principles
 

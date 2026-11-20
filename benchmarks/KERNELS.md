@@ -1,9 +1,10 @@
-# Freshet-lang benchmark kernels — normative specification (fsht-01:01)
+# Freshet-lang benchmark kernels — normative specification (fsht-03:03)
 
 This file is the **single source of truth** for the 12 benchmark kernels of the
 Freshet-lang suite. Every implementation (`freshet.fsht`, `idiomatic.cpp`,
 `tuned.cpp`, `safe.rs`) must follow it exactly, so that all four produce
-**bit-identical checksums** on the same machine.
+**bit-identical checksums** on the same machine. The kernels target the
+fsht-01:01 feature surface, which remains valid under fsht-03:03.
 
 Companion files per kernel directory: `kernel.json` (machine-readable summary),
 `freshet.fsht`, `idiomatic.cpp`, `tuned.cpp`, `safe.rs`.

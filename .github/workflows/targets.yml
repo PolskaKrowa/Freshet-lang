@@ -1,0 +1,114 @@
+# Target matrix — fsht-03:03's tested-before-declared gate (spec ch. 25 §3,
+# registry fsht-03:03-10.03.02).
+#
+# Every ratified target MUST have suitable runtime tests before support
+# is declared: each job below runs the pinned portable corpus program
+# (tests/corpus/22_portable_program.fsht) and a runtime smoke on ONE
+# ratified target, comparing against this repository's golden output.
+# A target whose row is not green is not supported, whatever the
+# compiler accepts.
+#
+# Jobs are manual/dispatch plus the conformance cadence (weekly) so a
+# broken runner tool is visible without gating every PR; the declaration
+# record lives in registry/features/10-toolchain.md's fsht-03:03
+# history. Requires PENSTOCK_REPO (owner/repo), same as conformance.yml.
+name: targets
+on:
+  workflow_dispatch:
+    inputs:
+      penstock_repo:
+        description: 'Penstock repository (owner/repo)'
+        default: 'PolsksaKrowa/Penstock'
+        required: true
+  schedule:
+    - cron: '0 5 * * 1'   # weekly, Monday 05:00 UTC
+
+jobs:
+  target:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: linux-x86_64
+            os: ubuntu-latest
+            triple: x86_64-unknown-linux-gnu
+            run: native
+          - label: linux-aarch64
+            os: ubuntu-24.04-arm      # native ARM64 runner
+            triple: aarch64-unknown-linux-gnu
+            run: native
+          - label: windows-x86_64
+            os: windows-latest
+            triple: x86_64-pc-windows-msvc
+            run: native
+          - label: wasm32-wasi
+            os: ubuntu-latest
+            triple: wasm32-wasi
+            run: wasmtime            # runtime installed in the job
+          - label: wasm32-standalone
+            os: ubuntu-latest
+            triple: wasm32-unknown-unknown
+            run: node                # embedder harness in the job
+    env:
+      PENSTOCK_REPO: ${{ github.event.inputs.penstock_repo || 'PolsksaKrowa/Penstock' }}
+      TARGET_TRIPLE: ${{ matrix.triple }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install execution environment (wasm rows)
+        if: matrix.run == 'wasmtime'
+        run: curl -s https://wasmtime.dev/install.sh | sh && echo "$HOME/.wasmtime/bin" >> "$GITHUB_PATH"
+      - name: Clone and build Penstock
+        run: |
+          set -e
+          git clone --depth 1 "https://github.com/${PENSTOCK_REPO}.git" ../Penstock
+          cd ../Penstock
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j"$(nproc)"
+          test -x build/bin/penstock || test -x bin/penstock
+      - name: Cross-compile the portable corpus for ${{ matrix.label }}
+        run: |
+          set -e
+          PEN=$(cd ../Penstock && ls build/bin/penstock 2>/dev/null || echo bin/penstock)
+          "$PEN" --target="$TARGET_TRIPLE" tests/corpus/22_portable_program.fsht \
+            -o "$RUNNER_TEMP/portable" 2>&1 | tee "$RUNNER_TEMP/build.log"
+          test -f "$RUNNER_TEMP/portable" || test -f "$RUNNER_TEMP/portable.exe" \
+            || test -f "$RUNNER_TEMP/portable.wasm" || test -f "$RUNNER_TEMP/portable.o"
+          echo "target build OK: $TARGET_TRIPLE"
+        shell: bash
+      - name: Run the portable corpus + runtime smoke on ${{ matrix.label }}
+        run: |
+          set -e
+          GOLDEN=$(cat tests/corpus/22_portable_program.expected)
+          OUT=$(bash .github/workflows/targets-run.sh "$RUNNER_TEMP/portable" "${{ matrix.run }}")
+          if [ "$OUT" != "$GOLDEN" ]; then
+            echo "target $TARGET_TRIPLE: golden mismatch"
+            echo "want: $GOLDEN"
+            echo "got:  $OUT"
+            exit 1
+          fi
+          echo "golden OK: $TARGET_TRIPLE"
+          # runtime smoke: worker-pool knobs are accepted and default
+          # silently when unset/unparsable (ch. 25 §4) — output invariant
+          OUT2=$(bash .github/workflows/targets-run.sh "$RUNNER_TEMP/portable" "${{ matrix.run }}" FRT_THREADS=2)
+          OUT3=$(bash .github/workflows/targets-run.sh "$RUNNER_TEMP/portable" "${{ matrix.run }}" FRT_THREADS=not-a-number)
+          if [ "$OUT2" != "$GOLDEN" ] || [ "$OUT3" != "$GOLDEN" ]; then
+            echo "target $TARGET_TRIPLE: FRT knobs changed observable output"
+            exit 1
+          fi
+          echo "runtime smoke OK: $TARGET_TRIPLE (FRT_* silent-default rule)"
+        shell: bash
+      - name: Target row status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "target $TARGET_TRIPLE: GREEN — support may be declared (tested-before-declared, ch. 25 §3)"
+          else
+            echo "target $TARGET_TRIPLE: NOT green — support MUST NOT be declared for this target"
+          fi
+        shell: bash

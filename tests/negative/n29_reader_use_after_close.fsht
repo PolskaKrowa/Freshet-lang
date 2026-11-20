@@ -1,0 +1,31 @@
+// fsht-03:01: use-after-close of an ownership-tracked stream handle —
+// F0301 (Reader/Writer bindings are owned resources: reader_close
+// pre-empts the scope-exit close and invalidates the binding).
+import io;
+fn setup(path: str) -> Result<usize, IoError> {
+    let mut w: Writer = io::writer_open(path)?;
+    let n: usize = io::writer_write(&mut w, "x")?;
+    io::writer_close(&mut w);
+    return Ok(n);
+}
+fn main() {
+    match (setup("neg29.tmp")) {
+        Ok(n) => { }
+        Err(e) => { }
+    }
+    match (io::reader_open("neg29.tmp")) {
+        Ok(rd0) => {
+            let mut rd: Reader = rd0;
+            match (io::reader_read_line(&mut rd)) {
+                Ok(line) => { }
+                Err(e) => { }
+            }
+            io::reader_close(&mut rd);      // release: rd invalidated
+            match (io::reader_read_line(&mut rd)) {   // use after close
+                Ok(line) => { print(str_of(&line)); println(); }
+                Err(e) => { print("eof"); println(); }
+            }
+        }
+        Err(e) => { print("ioerr"); println(); }
+    }
+}

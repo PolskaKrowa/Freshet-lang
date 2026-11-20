@@ -37,13 +37,15 @@ fn first<T, U>(p: Pair<T, U>) -> T { return p.a; }
 
 ## Why the constraint set is deliberately small
 
-User-defined traits, associated types and dynamic dispatch do not exist
-in fsht-01:01 — they are the headline of the fsht-02:02 update (registry
-chapter `fsht-02:01-06.02.*`). The four built-in concepts cover the
-numeric-kernel space the language targets today; nothing in this chapter
-prevents the extension, and the registry entry tracks the design
-constraint that static dispatch (monomorphisation) remains the default
-even after traits land.
+User-defined traits landed in **fsht-02:02** ([chapter 21](21-traits.md),
+registry [fsht-02:02-06.02.01](../registry/features/06-generics.md)):
+`T: SomeTrait` bounds and `+`-composition extend this chapter's set
+without touching the four built-ins, which remain reserved names with
+fixed meanings. Associated types and dynamic dispatch still do not
+exist — they are registry-tracked deferrals of fsht-02:02. The four
+built-in concepts cover the numeric-kernel space the language targets;
+the design constraint the registry records is that static dispatch
+(monomorphisation) remains the default even with user traits.
 
 ## Conformance requirements
 

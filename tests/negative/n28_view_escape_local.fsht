@@ -1,0 +1,10 @@
+// fsht-03:02: a view escaping its local owner — F0311 (the precise
+// lifetime diagnostic that replaces the fsht-02:01 F0301 blanket
+// rejection; the drop at function exit would dangle the view).
+fn leak() -> str {
+    let s: String = string_from("dangling");
+    return str_of(&s);            // view of a local escaping its storage
+}
+fn main() {
+    print(leak()); println();
+}

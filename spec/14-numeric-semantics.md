@@ -7,9 +7,11 @@ These rules are the contract every backend MUST honour.
 * **Overflow wraps.** `add`, `sub`, `mul` on signed and unsigned
   operands are two's-complement modular arithmetic — wrapping is the
   *specified* behaviour, never undefined behaviour (no `nsw`/`nuw`
-  semantics are assumed by the source language). Checked, saturating and
-  explicitly-wrapping operator variants are a recorded fsht-02 update
-  target (`fsht-03:01-08.01.04`).
+  semantics are assumed by the source language). The checked,
+  saturating and explicitly-wrapping variants landed in fsht-03:01
+  ([chapter 23 §2](23-stdlib-expansion.md), registry
+  `fsht-03:01-08.01.04`) — wrapping remains the default for the plain
+  operators.
 * Unsigned overflow likewise wraps (mod 2^N).
 
 ## Division and remainder

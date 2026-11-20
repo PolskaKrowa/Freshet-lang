@@ -1,0 +1,47 @@
+// fsht-03:03 corpus (registry 10.03.02) — the pinned portable program.
+// The target-matrix workflow (.github/workflows/targets.yml) runs THIS
+// program on every ratified target — Linux x86-64, Linux AArch64,
+// Windows x86-64, wasm WASI and wasm standalone — and every run must
+// produce exactly this file's golden stdout (ch. 25 §5's portable
+// program contract). Only portable surface appears here: usize
+// arithmetic (64-bit on every target, ch. 24 §6), checked conversions,
+// parse/format round-trips, containers with drops, and the xorshift64*
+// stream of the runtime's common layer.
+import random;
+
+fn main() {
+    // usize is 64-bit on every target: indices and lengths never move
+    let n: usize = 8;
+    let mut acc: usize = 0;
+    for (i in 0..n) { acc = acc + (i as usize) * (i as usize); }
+    print_i64(acc as i64); println();                 // 140
+
+    // checked conversions across the fixed-width model
+    let big: i64 = 4294967296;                        // 2^32
+    let half: Option<i32> = checked_cast(big);        // None
+    match (half) {
+        Some(v) => { print_i64(v as i64); println(); }
+        None => { print("none"); println(); }
+    }
+    let small: i32 = saturating_cast(big);            // 2147483647
+    print_i64(small as i64); println();
+
+    // parse + format round trip through the portable library
+    let s: String = fmt_i64(31337);
+    let back: Result<i64, ParseError> = parse_i64(str_of(&s));
+    match (back) {
+        Ok(v) => { print_i64(v); println(); }
+        Err(e) => { print("bad"); println(); }
+    }
+
+    // containers with scope-exit drops (the runtime's common layer)
+    let mut v: Vec<i64> = vec_new(i64, 2);
+    vec_push(&mut v, 2);
+    vec_push(&mut v, 3);
+    print_i64(v[0] * v[1] * 11); println();          // 66
+
+    // the reproducible xorshift64* stream (ch. 23 §5): identical on
+    // every target and implementation
+    let mut st: u64 = 88172645463325252;
+    print_u64(random::sm64_next(&mut st)); println();
+}

@@ -29,11 +29,12 @@ enum_type    ::= identifier
 | `bool` | 1 byte (i1 registers; i8 at C-ABI boundaries) |
 
 `usize` and `u64` are distinct spellings with identical representation
-(fsht-01:01-02.01.05). Whether `usize` should instead be
-target-pointer-sized is an open registry question for a future version —
-32-bit WebAssembly support is the motivating case; the resolution is
-tracked in the registry entry, and until then the two names are
-interchangeable in representation but MUST both exist.
+(fsht-01:01-02.01.05). The open representation question was resolved
+by fsht-03:02 (chapter 24 §6): `usize` is **permanently the fixed
+64-bit unsigned integer on every target** — including 32-bit
+WebAssembly — so indices, lengths and `sizeof` results never change
+with `--target`. The two names are interchangeable in representation
+and MUST both exist.
 
 ## Aggregates and views
 

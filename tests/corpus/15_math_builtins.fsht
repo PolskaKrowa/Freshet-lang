@@ -1,0 +1,13 @@
+// fsht-01:01 corpus — math/intrinsic surface: sqrt, fabs, fmin/fmax,
+// floor/ceil, integer imin/imax.
+fn main() {
+    print_f64(sqrt(9.0), 3); println();          // 3.000
+    print_f64(fabs(-2.5), 1); println();         // 2.5
+    print_f64(fmin(1.5, 2.5), 1); println();     // 1.5
+    print_f64(fmax(1.5, 2.5), 1); println();     // 2.5
+    print_f64(floor(2.7), 1); println();         // 2.0
+    print_f64(ceil(2.1), 1); println();          // 3.0
+    print_i64(imin(3, 9)); println();             // 3
+    print_i64(imax(3, 9)); println();             // 9
+    print_i64(imin(-3, 9)); println();            // -3
+}
