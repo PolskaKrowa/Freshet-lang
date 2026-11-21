@@ -18,7 +18,7 @@ on:
     inputs:
       penstock_repo:
         description: 'Penstock repository (owner/repo)'
-        default: 'PolsksaKrowa/Penstock'
+        default: 'PolskaKrowa/Penstock'
         required: true
   schedule:
     - cron: '0 5 * * 1'   # weekly, Monday 05:00 UTC
@@ -53,7 +53,7 @@ jobs:
             triple: wasm32-unknown-unknown
             run: node                # embedder harness in the job
     env:
-      PENSTOCK_REPO: ${{ github.event.inputs.penstock_repo || 'PolsksaKrowa/Penstock' }}
+      PENSTOCK_REPO: ${{ github.event.inputs.penstock_repo || 'PolskaKrowa/Penstock' }}
       TARGET_TRIPLE: ${{ matrix.triple }}
     steps:
       - uses: actions/checkout@v4
